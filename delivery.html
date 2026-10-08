@@ -10,21 +10,31 @@
                 <img src="assets/Logo.png" id="logo">
                 <div><p id="h_title">SweetHavens</p></div>
             </div>
+
+            <!-- Header Navigation buttons-->
             <div id="nav_buttons">
-                <div><nav><a id="nav1" href="#bestsellers">Best Sellers</a></div>
-                <div><nav><a id="nav2" href="map.html">Nearest Shop</a></nav></div>
-                <div><a id="nav1" href="about.html">About Us</a></div>
-                <div><a id="nav1" href="cart.html">Cart</a></div>
-                <div><a id="nav3">Menu</a></div>
-                <div><img src="assets/user.png" id="pfp_btn"></div>
+                <div><nav><a class="nav1" href="#bestsellers">Best Sellers</a></div>
+                <div><nav><a class="nav1" href="map.html">Nearest Shop</a></nav></div>
+                <div><a class="nav1" href="about.html">About Us</a></div>
+                <div><a class="nav1" href="cart.html">Cart</a></div>
+                <div><a class="nav1">Menu</a></div>
+
+                    <!-- Temporary login button-->
+                <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
-        </header> 
-        <div class="options">
+        </header>
+        
+        <!--Delivery form container-->
+        <div class="delivery-container">
+
+            <!--Delivery method buttons-->
             <h1>Delivery Options</h1>
             <div class="buttons">
                 <button class="option-btn">Delivery</button>
                 <button class="option-btn">Pick Up</button>
             </div>
+
+            <!--Address form-->
             <form>
                 <label for="address">Address:</label>
                 <input type="text" id="address" name="address" required><br><br>
@@ -36,6 +46,8 @@
                     <option value="paypal">PayPal</option>
                 </select><br><br>
             </form>
+
+            <!--Order Summary-->
             <div class="summary">
                 <h2>Order Summary</h2>
                 <div>
@@ -51,7 +63,9 @@
                     <p>₱ 100.00</p>
                 </div>
             </div>
-                <button type="submit">Place Order</button>
+            
+            <!--Nav to order finished screen-->
+                <button type="submit"><a href="orderfinished.html">Place Order</a></button>
         </div>
     </body>
 </html>

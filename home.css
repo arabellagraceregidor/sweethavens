@@ -62,7 +62,7 @@ footer{
     width: 24px;
     border-radius: 50%;
 }
-#nav1, #nav2, #nav3, #nav4 {
+.nav1{
     font-size: 18px;
 }
 #hero_section {
