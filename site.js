@@ -1,0 +1,106 @@
+/* site.js - shared by every page: light/dark button, add-to-cart on the home page, header links, helpers */
+(function () {
+    var S = {
+        get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
+        set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    };
+    var $ = function (s, r) { return (r || document).querySelector(s); };
+    var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+    var norm = function (s) { return String(s).trim().replace(/\s+/g, ' ').toLowerCase(); };
+    var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var fmt = function (n) { return '\u20B1 ' + Number(n).toFixed(2); };
+
+    /* products, prices and starting stock (prices come from the design PDF) */
+    var CATALOG = [
+        { n: 'Matcha Melties', p: 40, s: 30 }, { n: 'Biscoff Choco Crunch', p: 55, s: 30 },
+        { n: 'Oatie Choco Paws', p: 35, s: 30 }, { n: 'Choco Crinkles', p: 30, s: 30 },
+        { n: 'Chocolate Chip', p: 35, s: 40 }, { n: 'Red Velvet Cloud Bites', p: 40, s: 40 }
+    ];
+    var find = function (n) { return CATALOG.filter(function (c) { return norm(c.n) === norm(n); })[0]; };
+    var user = function () { return S.get('sh_user', null); };
+    var cart = function () { return S.get('sh_cart', []); };
+    var saveCart = function (c) { S.set('sh_cart', c); };
+    function stock() {
+        var st = S.get('sh_stock', {});
+        CATALOG.forEach(function (c) { if (st[c.n] == null) st[c.n] = c.s; });
+        return st;
+    }
+    var saveStock = function (st) { S.set('sh_stock', st); };
+
+    function toast(m) {
+        var t = $('#toast');
+        if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+        t.textContent = m; t.classList.add('on');
+        clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('on'); }, 1900);
+    }
+    function needLogin() {
+        if (user()) return false;
+        toast('LOG IN FIRST FIRST!');
+        setTimeout(function () { location.href = 'login.html'; }, 900);
+        return true;
+    }
+    function logout() { S.set('sh_user', null); S.set('sh_cart', []); location.href = 'login.html'; }
+
+    window.SH = { S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
+        saveCart: saveCart, stock: stock, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout };
+
+    /* ---- light / dark mode button ---- */
+    var theme = 'light';
+    try { theme = localStorage.getItem('sh_theme') || 'light'; } catch (e) {}
+    var tb = document.createElement('button');
+    tb.id = 'theme'; tb.title = 'Light / Dark mode'; tb.setAttribute('aria-label', 'Switch light or dark mode');
+    document.body.appendChild(tb);
+    function paintTheme() { document.documentElement.setAttribute('data-theme', theme); tb.textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'; }
+    paintTheme();
+    tb.onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; paintTheme(); try { localStorage.setItem('sh_theme', theme); } catch (e) {} };
+
+    /* ---- header: admin-only links, log out, current page ---- */
+    var u = user(), nav = $('#nav_buttons');
+    if (nav) {
+        var last = nav.lastElementChild, add = function (href, text, id) {
+            var d = document.createElement('div');
+            d.innerHTML = '<a class="nav1"' + (id ? ' id="' + id + '"' : '') + ' href="' + href + '">' + text + '</a>';
+            nav.insertBefore(d, last);
+        };
+        if (u && u.role === 'admin') { add('dashboard.html', 'Dashboard'); add('admin_orders.html', 'Orders'); }
+        if (u) {
+            add('#', 'Log Out', 'logout_link');
+            $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
+            var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
+        }
+        var here = location.pathname.split('/').pop() || 'home_page.html';
+        $$('a.nav1', nav).forEach(function (a) { if (a.getAttribute('href') === here) a.classList.add('here'); });
+    }
+    try { var fl = sessionStorage.getItem('sh_flash'); if (fl) { sessionStorage.removeItem('sh_flash'); toast(fl); } } catch (e) {}
+
+    /* ---- home page: Learn More / Add to cart / Order Now ---- */
+    function modal(html) {
+        var m = $('#modal');
+        if (!m) { m = document.createElement('div'); m.id = 'modal'; m.innerHTML = '<div class="mbox" id="mbox"></div>'; document.body.appendChild(m);
+            m.addEventListener('click', function (e) { if (e.target === m || e.target.getAttribute('data-close')) m.classList.remove('on'); }); }
+        $('#mbox').innerHTML = html; m.classList.add('on');
+    }
+    function addItem(card) {
+        var name = $('.card-header', card).textContent.trim(), p = find(name) || { p: 0 };
+        var c = cart(), f = c.filter(function (i) { return norm(i.name) === norm(name); })[0];
+        if (f) f.qty++; else c.push({ name: name, price: p.p, img: $('.product-img', card).getAttribute('src'), qty: 1 });
+        saveCart(c); return name;
+    }
+    document.addEventListener('click', function (e) {
+        var card = e.target.closest ? e.target.closest('.product-card') : null;
+        if (!card) return;
+        var info = e.target.closest('.info-btn'), add = e.target.closest('.cart-btn'), ord = e.target.closest('.order-btn');
+        if (info) {
+            var nm = $('.card-header', card).textContent.trim(), p = find(nm);
+            modal('<img src="' + esc($('.product-img', card).getAttribute('src')) + '" alt=""><h3>' + esc(nm) + '</h3><small>' + esc($('.card-notif', card).textContent) +
+                '</small><p>' + esc($('.card-p', card).textContent) + '</p><div class="price">' + (p ? fmt(p.p) : '') + '</div>' +
+                '<button class="btn_dark" id="m_add">Add to cart</button> <button class="btn_dark" data-close="1" style="background:#D9D9D9;color:#000">Close</button>');
+            $('#m_add').onclick = function () { if (needLogin()) return; toast(addItem(card) + ' added to cart'); $('#modal').classList.remove('on'); };
+        } else if (add || ord) {
+            if (needLogin()) { e.preventDefault(); return; }
+            var added = addItem(card);
+            if (ord) { e.preventDefault(); location.href = 'cart.html'; }
+            else if (!add.querySelector('a')) toast(added + ' added to cart');
+        }
+    });
+})();

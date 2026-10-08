@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SweetHavens - Order Management</title>
+        <link rel="stylesheet" href="home.css">
+    </head>
+    <body>
+        <header>
+            <div id="h_title-cont">
+                <img src="assets/Logo.png" id="logo">
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
+            </div>
+
+            <!-- Header Navigation buttons-->
+            <div id="nav_buttons">
+                <div><nav><a class="nav1" href="map.html">Nearest Shop</a></nav></div>
+                <div><a class="nav1" href="about.html">About Us</a></div>
+                <div><a class="nav1" href="cart.html">Cart</a></div>
+                <div><a class="nav1">Menu</a></div>
+
+                    <!-- Temporary login button-->
+                <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
+            </div>
+        </header>
+
+        <!--Order management (admin only)-->
+        <div class="admin_cont" id="adminOrders">
+            <h1>Order Management</h1>
+            <p class="sub">View orders and update their status</p>
+            <div class="filters" id="filters"></div>
+            <div class="panel2"><div class="tbl_wrap"><table class="tbl" id="ord"></table></div></div>
+        </div>
+        <script src="site.js"></script>
+        <script src="admin.js"></script>
+    </body>
+</html>
