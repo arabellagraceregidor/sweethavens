@@ -167,7 +167,7 @@ a{
     align-items: center;
     justify-content: center;
     width: 90%;
-    height: 250px;
+    height: 280px;
     gap: 16px;
     margin-top: 32px;
     margin-left: 5%;
@@ -251,7 +251,6 @@ a.nav1.here::after{ width:100%; }
 .product-card[style*="rgb(161, 93, 36)"] .card-header, .product-card[style*="rgb(161, 93, 36)"] .card-p,
 .product-card[style*="rgb(206, 163, 134)"] .card-header, .product-card[style*="rgb(206, 163, 134)"] .card-p{ color:#000; }
 .product-card{ transition:transform .3s; }
-.product-card:hover{ transform:translateY(-4px); }
 .product-img{ transition:transform .4s; }
 .product-card:hover .product-img{ transform:rotate(-6deg) scale(1.05); }
 #hero_section, .form_cont, .cart_cont, .delivery-container, .order_finished, .receipt_cont, #about_us, .map-container, .admin_cont{ animation:pgin .45s ease both; }
