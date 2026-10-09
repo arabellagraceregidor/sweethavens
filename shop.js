@@ -4,6 +4,19 @@
     if (SH.needLogin()) return;
     var FEE = 50;
 
+    /* order complete: the page behind blurs (74%) and a truck loads the package, then we go to the "order placed" page */
+    function showOrderOverlay() {
+        var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var o = document.createElement('div'); o.id = 'order_overlay';
+        o.innerHTML = '<div class="order_pill"><div class="pkg"></div><div class="truck"><div class="cargo"></div><div class="cab"></div>' +
+            '<i class="wheel w1"></i><i class="wheel w2"></i></div></div><p class="order_msg">Placing your order...</p>' +
+            '<p class="order_sub">Please wait while we pack your cookies.</p>';
+        document.body.appendChild(o);
+        requestAnimationFrame(function () { requestAnimationFrame(function () { o.classList.add('on'); }); });
+        setTimeout(function () { $('.order_msg', o).textContent = 'Order complete!'; $('.order_sub', o).textContent = 'Your treats are on their way.'; }, still ? 400 : 4500);
+        setTimeout(function () { location.href = 'orderfinished.html'; }, still ? 1200 : 5700);
+    }
+
     /* ---------- CART ---------- */
     var wrap = $('.cart_cont');
     if (wrap) {
@@ -71,7 +84,7 @@
             orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: method.options[method.selectedIndex].text,
                 items: c.map(function (i) { return { name: i.name, qty: i.qty, price: i.price }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString() });
             S.set('sh_orders', orders); S.set('sh_last', id); SH.saveCart([]);
-            location.href = 'orderfinished.html';
+            showOrderOverlay();
         }, true);
     }
 

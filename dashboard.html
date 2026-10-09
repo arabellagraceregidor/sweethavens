@@ -1,70 +1,75 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SweetHavens</title>
+        <title>SweetHavens - Admin Dashboard</title>
         <link rel="stylesheet" href="home.css">
     </head>
     <body>
         <header>
             <div id="h_title-cont">
                 <img src="assets/Logo.png" id="logo">
-                <div><p><a id="h_title" href="dashboard.html">SweetHavens</a></p></div>
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
             </div>
 
             <!-- Header Navigation buttons-->
             <div id="nav_buttons">
-                <div><nav><a class="nav1" href="dashboard.html">Dashboard</a></nav></div>
-                <div><a class="nav1" href="create_products.html">Create</a></div>
-                <div><a class="nav1" href="inventory.html">Inventory</a></div>
-                <div><a class="nav1" href="schedule_mngmt.html">Schedules</a></div>
-                <div><a class="nav1" href="admin_orders.html">Orders</a></div>
+                <div><nav><a class="nav1" href="map.html">Nearest Shop</a></nav></div>
+                <div><a class="nav1" href="about.html">About Us</a></div>
+                <div><a class="nav1" href="cart.html">Cart</a></div>
                 <div><a class="nav1">Menu</a></div>
 
                     <!-- Temporary login button-->
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
-        <main>
-            <h1>Dashboard</h1>
 
-            <!--Sales Summary-->
-            <div id="sales">
-                <h2>Sales Summary:</h2>
-                <p></p>
+        <!--Admin dashboard (admin only)-->
+        <div class="admin_cont" id="adminDash">
+            <div class="admin_tabs"><a href="dashboard.html" class="on">Dashboard</a><a href="admin_orders.html">Orders</a></div>
+            <h1>Admin Dashboard</h1>
+            <p class="sub">Sales and inventory monitoring</p>
+            <div class="stat_grid" id="stats"></div>
+
+            <!--Graphs and pie charts-->
+            <div class="chart_grid">
+                <div class="panel2"><h2>Sales - last 7 days</h2><div class="bars" id="bars"></div></div>
+                <div class="panel2"><h2>Sales trend - last 14 days</h2><div id="line"></div></div>
+                <div class="panel2"><h2>Sales by product</h2><div id="pie1"></div></div>
+                <div class="panel2"><h2>Orders by status</h2><div id="pie2"></div></div>
+                <div class="panel2"><h2>Payment methods</h2><div id="pie3"></div></div>
+                <div class="panel2"><h2>Top sellers</h2><div id="top"></div></div>
             </div>
-            
-            <!--Purchase history section-->
-            <div id="history">
-                <h2>Purchase history</h2>
 
-                <!--Sample history card-->
-                <div class="history-card">
-                    <p>Matcha Melties</p>
-                    <p>qty: 5</p>
-                    <p>Total: P 500</p>
+            <div class="panel2"><h2>Stock levels</h2><div id="stockbars"></div></div>
+            <div class="panel2"><h2>Inventory</h2><div class="tbl_wrap"><table class="tbl" id="inv"></table></div></div>
+
+            <!--Add product + Add photo-->
+            <div class="panel2" id="addProduct">
+                <h2>Add Product</h2>
+                <div class="ap_grid">
+                    <div><label for="ap_name">Product name</label><input type="text" id="ap_name" placeholder="e.g. Double Choco Chunk"></div>
+                    <div><label for="ap_price">Price (&#8369;)</label><input type="number" id="ap_price" min="1" placeholder="40"></div>
+                    <div><label for="ap_stock">Starting stock</label><input type="number" id="ap_stock" min="0" placeholder="30"></div>
+                    <div class="full"><label for="ap_desc">Description (optional)</label><input type="text" id="ap_desc" placeholder="Soft and chewy cookies..."></div>
+                    <div class="full">
+                        <label>Add Photo</label>
+                        <div class="photo_row">
+                            <div class="photo_prev" id="ap_prev"></div>
+                            <input type="file" id="ap_file" accept="image/*" hidden>
+                            <button type="button" class="btn_dark" id="ap_pick">Add Photo</button>
+                            <span id="ap_fn">No photo selected</span>
+                        </div>
+                    </div>
                 </div>
+                <p class="ap_msg" id="ap_msg"></p>
+                <button type="button" class="btn_dark" id="ap_save">Add Product</button>
             </div>
 
-            <!--Inventory-->
-            <div id="inventory">
-                <h2>Inventory</h2>
-                
-                <!--Samples inventory card-->
-                <div class="inventory-card">
-                    <p>Matcha Melties</p>
-                    <p>Remaining: 15</p>
-                    <p>Best before: MM/DD/YYYY</p>
-                </div>
-            </div>
-
-            <!--Schedules-->
-            <div id="schedule">
-                <h2>Branches open:</h2>
-                <div>
-                    <p>Technological University of the Philippines - Manila branch</p>
-                    <p>Status: <strong>Open</strong></p>
-                </div>
-            </div>
-        </main>
+            <div class="panel2"><h2>Recent orders</h2><div class="tbl_wrap"><table class="tbl" id="recent"></table></div>
+                <p><a href="admin_orders.html" style="color:var(--mar);text-decoration:underline">Manage all orders</a></p></div>
+            <button class="btn_dark" id="reset">Reset sample data</button>
+        </div>
+        <script src="site.js"></script>
+        <script src="admin.js"></script>
     </body>
 </html>

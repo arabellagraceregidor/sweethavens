@@ -16,13 +16,19 @@
         { n: 'Oatie Choco Paws', p: 35, s: 30 }, { n: 'Choco Crinkles', p: 30, s: 30 },
         { n: 'Chocolate Chip', p: 35, s: 40 }, { n: 'Red Velvet Cloud Bites', p: 40, s: 40 }
     ];
-    var find = function (n) { return CATALOG.filter(function (c) { return norm(c.n) === norm(n); })[0]; };
+    var BASE = CATALOG.slice();
+    var customList = function () { return S.get('sh_products', []); };
+    /* products = the 6 from the design + any product the admin added (name, price, stock, photo) */
+    var catalog = function () {
+        return BASE.concat(customList().map(function (p) { return { n: p.n, p: p.p, s: p.s, custom: true, id: p.id, img: p.img, d: p.d }; }));
+    };
+    var find = function (n) { return catalog().filter(function (c) { return norm(c.n) === norm(n); })[0]; };
     var user = function () { return S.get('sh_user', null); };
     var cart = function () { return S.get('sh_cart', []); };
     var saveCart = function (c) { S.set('sh_cart', c); };
     function stock() {
         var st = S.get('sh_stock', {});
-        CATALOG.forEach(function (c) { if (st[c.n] == null) st[c.n] = c.s; });
+        catalog().forEach(function (c) { if (st[c.n] == null) st[c.n] = c.s; });
         return st;
     }
     var saveStock = function (st) { S.set('sh_stock', st); };
@@ -41,7 +47,7 @@
     }
     function logout() { S.set('sh_user', null); S.set('sh_cart', []); location.href = 'login.html'; }
 
-    window.SH = { S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
+    window.SH = { catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
         saveCart: saveCart, stock: stock, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout };
 
     /* ---- light / dark mode button ---- */
@@ -53,6 +59,71 @@
     function paintTheme() { document.documentElement.setAttribute('data-theme', theme); tb.textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'; }
     paintTheme();
     tb.onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; paintTheme(); try { localStorage.setItem('sh_theme', theme); } catch (e) {} };
+
+    /* ---- header: admin-only links, log out, current page ---- */
+    var u = user(), nav = $('#nav_buttons');
+    if (nav) {
+        var last = nav.lastElementChild, add = function (href, text, id) {
+            var d = document.createElement('div');
+            d.innerHTML = '<a class="nav1"' + (id ? ' id="' + id + '"' : '') + ' href="' + href + '">' + text + '</a>';
+            nav.insertBefore(d, last);
+        };
+        if (u && u.role === 'admin') { add('dashboard.html', 'Dashboard'); add('admin_orders.html', 'Orders'); }
+        if (u) {
+            add('#', 'Log Out', 'logout_link');
+            $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
+            var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
+        }
+        /* the Menu button now works: it goes to the menu on the home page */
+        $$('a.nav1', nav).forEach(function (a) {
+            if (!a.getAttribute('href') && a.textContent.trim() === 'Menu') a.setAttribute('href', 'home_page.html#weekly');
+        });
+        var here = location.pathname.split('/').pop() || 'home_page.html';
+        $$('a.nav1', nav).forEach(function (a) {
+            var h = a.getAttribute('href');
+            if (h === here || (here === 'home_page.html' && a.textContent.trim() === 'Menu')) a.classList.add('here');
+        });
+        /* modern navbar: a pill that slides under the link you point at */
+        var ind = document.createElement('span'); ind.className = 'nav_ind'; nav.appendChild(ind);
+        var links = $$('a.nav1', nav), first = true;
+        var place = function (a) {
+            if (!a) { ind.style.opacity = '0'; links.forEach(function (l) { l.classList.remove('lit'); }); return; }
+            if (first) { ind.style.transition = 'none'; }
+            ind.style.opacity = '1'; ind.style.left = a.offsetLeft + 'px'; ind.style.top = a.offsetTop + 'px';
+            ind.style.width = a.offsetWidth + 'px'; ind.style.height = a.offsetHeight + 'px';
+            links.forEach(function (l) { l.classList.toggle('lit', l === a); });
+            if (first) { ind.offsetWidth; ind.style.transition = ''; first = false; }
+        };
+        var rest = function () { place($('a.nav1.here', nav)); };
+        links.forEach(function (a) { a.addEventListener('mouseenter', function () { place(a); }); a.addEventListener('focus', function () { place(a); }); });
+        nav.addEventListener('mouseleave', rest);
+        rest(); window.addEventListener('resize', rest); window.addEventListener('load', rest);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(rest);
+    }
+    /* the logo goes to the same place as the SweetHavens words next to it */
+    var logo = $('#logo'), word = $('#h_title');
+    if (logo && word && !(logo.parentNode.tagName === 'A')) {
+        var la = document.createElement('a'); la.href = word.getAttribute('href') || 'home_page.html'; la.title = 'SweetHavens';
+        logo.parentNode.insertBefore(la, logo); la.appendChild(logo);
+    }
+    try { var fl = sessionStorage.getItem('sh_flash'); if (fl) { sessionStorage.removeItem('sh_flash'); toast(fl); } } catch (e) {}
+
+    /* ---- home page: show products the admin added (after list.js made the others) ---- */
+    function injectCustom() {
+        var box = $('#classics'); if (!box) return;
+        var cols = ['#E08EAA', '#93494A', '#CEA386', '#75672C', '#A15D24', '#554C4E'];
+        customList().forEach(function (p, i) {
+            var t = document.getElementById(i % 2 ? 'card-template2' : 'card-template'); if (!t) return;
+            var k = t.content.cloneNode(true), im = $('.product-img', k);
+            im.src = p.img || 'assets/Logo.png'; im.alt = p.n;
+            $('.product-card', k).style.backgroundColor = cols[i % cols.length];
+            $('.card-header', k).textContent = p.n; $('.card-notif', k).textContent = 'New!';
+            $('.card-p', k).textContent = p.d || 'Freshly baked and ready to order.';
+            $('.info-btn', k).textContent = 'Learn More'; $('.order-btn', k).textContent = 'Order Now';
+            box.appendChild(k);
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectCustom); else injectCustom();
 
     /* ---- home page: Learn More / Add to cart / Order Now ---- */
     function modal(html) {

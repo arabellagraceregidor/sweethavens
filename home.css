@@ -34,7 +34,7 @@ footer{
 }
 #h_title {
     font-family: my-font;
-    font-size: 36px;
+    font-size: 48px;
     font-weight: bold;
     color: #E08EAA;
     -webkit-text-stroke: 5px #fff;
@@ -42,7 +42,7 @@ footer{
 }
 #h_title-cont{
     position: absolute;
-    left: 64px;
+    left: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -167,7 +167,7 @@ a{
     align-items: center;
     justify-content: center;
     width: 90%;
-    height: 280px;
+    height: 250px;
     gap: 16px;
     margin-top: 32px;
     margin-left: 5%;
@@ -208,9 +208,6 @@ a{
 }
 
 
-/* =====================================================================
-   WEBSITE DESIGN (from the SweetHavens design PDF)
-   ===================================================================== */
 @font-face{ font-family:Rugrats; src:url(assets/fonts/RugratsSans-Regular.ttf) format("truetype"); }
 @font-face{ font-family:Bakerie; src:url(assets/fonts/BakerieSmooth-Regular.ttf) format("truetype"); font-weight:400; }
 @font-face{ font-family:Bakerie; src:url(assets/fonts/BakerieSmooth-Bold.ttf) format("truetype"); font-weight:700; }
@@ -232,7 +229,7 @@ body{ background:var(--bg); color:var(--ink); font-family:var(--ari); min-height
 [data-theme="dark"] a{ color:var(--ink); }
 [data-theme="dark"] header a.nav1{ color:#F4C2D6; }
 button a{ color:inherit; }
-#theme{ position:fixed; top:8px; right:12px; z-index:60; width:38px; height:38px; border-radius:50%; border:2px solid var(--bord);
+#theme{ position:fixed; bottom:18px; right:16px; z-index:60; width:38px; height:38px; border-radius:50%; border:2px solid var(--bord);
     background:var(--card); font-size:18px; line-height:1; cursor:pointer; }
 #hero_cookie{ max-width:100%; height:auto; object-fit:contain; }
 #main_title{ font-size:min(180px, 5.6vw); white-space:nowrap; }
@@ -251,6 +248,7 @@ a.nav1.here::after{ width:100%; }
 .product-card[style*="rgb(161, 93, 36)"] .card-header, .product-card[style*="rgb(161, 93, 36)"] .card-p,
 .product-card[style*="rgb(206, 163, 134)"] .card-header, .product-card[style*="rgb(206, 163, 134)"] .card-p{ color:#000; }
 .product-card{ transition:transform .3s; }
+.product-card:hover{ transform:translateY(-4px); }
 .product-img{ transition:transform .4s; }
 .product-card:hover .product-img{ transform:rotate(-6deg) scale(1.05); }
 #hero_section, .form_cont, .cart_cont, .delivery-container, .order_finished, .receipt_cont, #about_us, .map-container, .admin_cont{ animation:pgin .45s ease both; }
@@ -428,7 +426,7 @@ table.tbl tr:hover td{ background:var(--field); }
 .filters input{ flex:1; min-width:180px; }
 
 /* ---------- animations ---------- */
-.info-btn, .order-btn, .cart-btn, .btn_dark, .landing_go, #login_btn{ transition:transform .15s, filter .2s, background-color .2s; }
+.info-btn, .order-btn, .cart-btn, #h_button, .btn_dark, .landing_go, #login_btn{ transition:transform .15s, filter .2s, background-color .2s; }
 .info-btn:hover, .order-btn:hover, .cart-btn:hover, #login_btn:hover{ transform:translateY(-2px); filter:brightness(1.06); }
 @view-transition{ navigation:auto; }
 @keyframes slideOut{ to{ transform:translateX(-12%); opacity:0; } }
@@ -439,6 +437,116 @@ table.tbl tr:hover td{ background:var(--field); }
     *, *::before, *::after{ animation:none !important; transition:none !important; }
     ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*){ animation:none !important; }
 }
+
+
+/* =====================================================================
+   NEW: scrolling + centering, modern navbar, sparkle button, order overlay,
+   charts and Add Product (all colors come from the site palette)
+   ===================================================================== */
+
+/* ---------- pages scroll, and content sits in the center of any screen ---------- */
+html{ overflow-y:auto; scroll-behavior:smooth; }
+body{ display:flex; flex-direction:column; min-height:100vh; }
+header{ flex:none; }
+body:has(.form_cont, .cart_cont, .delivery-container, .order_finished, .receipt_cont, .map-container, #about_us){ padding-bottom:40px; box-sizing:border-box; }
+.form_cont, .cart_cont, .delivery-container, .receipt_cont, .map-container, #about_us, .admin_cont{ width:100%; box-sizing:border-box; }
+.form_cont, .cart_cont, .delivery-container, .receipt_cont, .map-container, #about_us{ margin-top:auto; margin-bottom:auto; }
+.order_finished{ width:calc(100% - 32px); max-width:760px; box-sizing:border-box; margin-top:auto; margin-bottom:auto; }
+body:has(.form_cont) header + div{ margin-top:auto; width:100%; box-sizing:border-box; }
+body:has(.form_cont) .form_cont{ margin-top:0; }
+.cart_cont, .delivery-container, .receipt_cont, .map-container{ padding-top:30px; padding-bottom:30px; }
+
+/* ---------- modern pill navbar with a sliding indicator ---------- */
+#nav_buttons{ gap:4px; padding:6px 14px; border-radius:60px; background:rgba(255,255,255,.35); -webkit-backdrop-filter:blur(15px); backdrop-filter:blur(15px);
+    box-shadow:0 10px 25px rgba(147,73,74,.25); border:.5px solid rgba(147,73,74,.45); }
+a.nav1{ padding:9px 14px; border-radius:30px; z-index:1; transition:color .25s ease; cursor:pointer; }
+a.nav1::after{ display:none; }
+a.nav1.lit{ color:#fff; }
+[data-theme="dark"] header a.nav1.lit{ color:#fff; }
+#pfp_btn{ margin:0 8px; vertical-align:middle; }
+.nav_ind{ position:absolute; z-index:0; border-radius:30px; background:linear-gradient(135deg,#E08EAA,#93494A); box-shadow:0 0 18px #E08EAA; opacity:0;
+    pointer-events:none; transition:left .35s cubic-bezier(.4,0,.2,1), top .35s, width .35s, height .35s, opacity .25s; }
+[data-theme="dark"] #nav_buttons{ background:rgba(255,255,255,.06); border-color:#6A3F4D; }
+#h_title-cont a{ display:flex; }
+
+/* ---------- Get Started: sparkle button (index page only) ---------- */
+@property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
+.landing_go{ position:relative; isolation:isolate; background:transparent; overflow:visible; }
+.landing_go::before{ content:""; position:absolute; inset:-4px; border-radius:40px; z-index:-1; opacity:0; filter:blur(7px);
+    background:conic-gradient(from var(--ang), #F4C2D6, #E08EAA, #93494A, #E08EAA, #F4C2D6); transition:opacity .4s ease; animation:spin_ang 2.4s linear infinite paused; }
+.landing_go::after{ content:""; position:absolute; inset:0; border-radius:32px; background:var(--pink); z-index:-1; }
+.landing_go:hover::before, .landing_go:focus-within::before{ opacity:1; animation-play-state:running; }
+@keyframes spin_ang{ to{ --ang:360deg; } }
+.spark_ico{ width:24px; height:24px; vertical-align:-5px; margin-right:10px; fill:#93494A; }
+.spark_ico path{ transform-box:fill-box; transform-origin:center; animation:idle_spark 3s ease-in-out infinite; }
+.landing_go:hover .spark_ico path:first-child{ animation:twinkle .6s ease-in-out infinite alternate; }
+.landing_go:hover .spark_ico path:last-child{ animation:twinkle .6s .3s ease-in-out infinite alternate; }
+@keyframes twinkle{ from{ transform:scale(.75) rotate(0); } to{ transform:scale(1.25) rotate(25deg); } }
+@keyframes idle_spark{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+.landing_hero{ flex:1; min-height:max(560px, calc(100vh - 70px)); align-items:center; padding:0 16px 310px; box-sizing:border-box; }
+
+/* ---------- order complete overlay (truck animation) ---------- */
+#order_overlay{ position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px;
+    background:rgba(255,245,248,.74); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:0; transition:opacity .35s ease; }
+#order_overlay.on{ opacity:1; }
+[data-theme="dark"] #order_overlay{ background:rgba(29,21,23,.74); }
+.order_pill{ position:relative; width:min(560px, 88vw); height:130px; border-radius:70px; background:#3A2C2F; border:3px solid #F4C2D6; overflow:hidden; margin-bottom:18px;
+    box-shadow:0 14px 40px rgba(147,73,74,.35); }
+.order_pill::after{ content:""; position:absolute; left:20px; right:20px; bottom:26px; height:3px; border-radius:2px; opacity:.45;
+    background:repeating-linear-gradient(90deg, #F4C2D6 0 18px, transparent 18px 32px); }
+.order_pill .pkg{ position:absolute; z-index:1; top:50%; left:34px; width:84px; height:54px; margin-top:-30px; border-radius:8px;
+    background:linear-gradient(180deg,#fff,#F4C2D6); box-shadow:inset 0 -6px 0 rgba(147,73,74,.25); animation:pkg_load 4.4s ease forwards; }
+.order_pill .pkg::before{ content:""; position:absolute; left:0; right:0; top:22px; height:6px; background:rgba(147,73,74,.35); }
+.order_pill .truck{ position:absolute; z-index:2; top:50%; width:140px; height:64px; margin-top:-34px; left:calc(100% - 190px); animation:truck_drive 4.4s ease forwards; }
+.truck .cargo{ position:absolute; left:0; top:0; width:98px; height:64px; border-radius:6px; background:linear-gradient(180deg,#fff,#E9DDE2); }
+.truck .cab{ position:absolute; right:0; top:10px; width:44px; height:54px; border-radius:4px 22px 6px 4px; background:#93494A; }
+.truck .cab::before{ content:""; position:absolute; right:6px; top:8px; width:20px; height:16px; border-radius:2px 12px 2px 2px; background:rgba(244,194,214,.85); }
+.truck .wheel{ position:absolute; bottom:-7px; width:16px; height:16px; border-radius:50%; background:#3A2C2F; border:3px solid #F4C2D6; }
+.truck .w1{ left:16px; } .truck .w2{ left:102px; }
+@keyframes pkg_load{ 0%,15%{ left:34px; opacity:1; } 52%{ left:calc(100% - 170px); opacity:1; } 53%,100%{ left:calc(100% - 170px); opacity:0; } }
+@keyframes truck_drive{ 0%,55%{ left:calc(100% - 190px); } 62%{ left:calc(100% - 206px); } 100%{ left:calc(100% + 40px); } }
+.order_msg{ margin:0; font:italic 700 28px lemon, var(--ari); color:var(--mar); text-align:center; }
+.order_sub{ margin:0; font-size:17px; color:var(--ink); text-align:center; }
+
+/* ---------- admin: tabs, charts, add product ---------- */
+.admin_tabs{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.admin_tabs a{ padding:8px 24px; border-radius:6px; background:var(--pink); color:#3A2C2F; font:17px var(--rug); transition:transform .2s, filter .2s; }
+.admin_tabs a:hover{ transform:translateY(-2px); filter:brightness(1.05); }
+.admin_tabs a.on{ background:var(--mar); color:#fff; }
+.chart_grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap:22px; margin-bottom:22px; }
+.chart_grid .panel2{ margin-bottom:0; }
+.pie_wrap{ display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap; }
+.pie_wrap svg{ width:180px; height:180px; flex:none; filter:drop-shadow(0 4px 8px rgba(147,73,74,.25)); }
+.pie_wrap circle{ transition:opacity .25s, stroke-width .25s; }
+.pie_wrap circle:hover{ opacity:.8; }
+.legend{ display:flex; flex-direction:column; gap:6px; font-size:14px; }
+.legend div{ display:flex; align-items:center; gap:8px; }
+.legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; flex:none; }
+.legend b{ margin-left:auto; padding-left:12px; color:var(--mar); }
+.line_svg{ width:100%; height:auto; }
+.line_svg text{ fill:var(--ph); font:11px var(--ari); }
+.line_svg .grid{ stroke:var(--bord); stroke-width:1; }
+.line_svg .ln{ fill:none; stroke:#93494A; stroke-width:3; stroke-linejoin:round; stroke-linecap:round; stroke-dasharray:1400; stroke-dashoffset:1400; animation:draw 1.4s ease forwards; }
+.line_svg .dot{ fill:#fff; stroke:#93494A; stroke-width:2.5; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+.sbar{ display:grid; grid-template-columns:minmax(120px, 190px) 1fr 70px; align-items:center; gap:12px; margin-bottom:10px; font-size:15px; }
+.sbar .meter{ margin-top:0; height:14px; }
+.sbar .meter i{ background:linear-gradient(90deg,#F4C2D6,#93494A); }
+.sbar .meter i.low{ background:linear-gradient(90deg,#FFD9A0,#E08EAA); }
+.sbar .meter i.out{ background:#F3A6A0; }
+.sbar b{ text-align:right; color:var(--mar); }
+.ap_grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+.ap_grid .full{ grid-column:1 / -1; }
+.ap_grid label{ display:block; font-weight:700; font-size:16px; margin-bottom:6px; }
+.ap_grid input[type="text"], .ap_grid input[type="number"]{ width:100%; height:46px; box-sizing:border-box; border:2px solid var(--bord); border-radius:12px; background:var(--field);
+    color:var(--ink); padding:0 14px; font:16px var(--ari); outline:none; transition:box-shadow .35s, border-color .3s; }
+.ap_grid input:focus{ border-color:#E08EAA; box-shadow:-3px -3px 12px #F4C2D6, 3px 3px 12px #93494A; }
+.ap_grid input.invalid{ border-color:var(--err); box-shadow:0 0 10px var(--err); }
+.photo_row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.photo_prev{ width:96px; height:96px; border-radius:20px; border:2px dashed var(--bord); background:var(--pink) center / contain no-repeat; flex:none; }
+.ap_msg{ margin:10px 0 0; min-height:22px; font-weight:700; color:var(--mar); }
+.thumb{ width:36px; height:36px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px; background:var(--pink); }
+.mini.del{ border-color:var(--err); color:var(--err); }
 
 /* =====================================================================
    RESPONSIVE (breakpoints from the reference photo)
@@ -480,7 +588,7 @@ table.tbl tr:hover td{ background:var(--field); }
     .cart_card{ padding:12px; gap:12px; justify-content:center; text-align:center; }
     .cart_info-cont{ flex:1 1 100%; }
     .delivery-container h1{ font-size:26px; }
-    .order_finished{ margin:30px 16px; padding:30px 16px; }
+    .order_finished{ padding:30px 16px; }
     .receipt_box{ padding:12px 16px; } .receipt_box hr{ margin:18px -16px 0; } .receipt_in{ min-width:100%; font-size:18px; } .receipt_line{ font-size:18px; }
     #about_us{ padding:40px 16px; } #about_us .products_header{ font-size:38px; margin-bottom:24px; } #about_us p{ font-size:18px; } #about_us #main_header::after{ font-size:26px; }
     .map-container iframe{ height:320px; }
@@ -516,9 +624,10 @@ table.tbl tr:hover td{ background:var(--field); }
 /* Desktop: min-width 992px and max-width 1199.98px */
 @media (min-width: 992px) and (max-width: 1199.98px){
     #h_title-cont{ left:24px; }
-    #h_title{ font-size:36px; }
-    #nav_buttons{ right:24px; gap:16px; }
-    .nav1{ font-size:16px; }
+    #h_title{ font-size:34px; }
+    #nav_buttons{ right:24px; gap:2px; padding:5px 10px; }
+    .nav1{ font-size:15px; }
+    a.nav1{ padding:8px 10px; }
     #hero_cookie{ width:500px; height:500px; }
     .product-img, #card2_img{ width:340px; height:340px; }
     .img-cont, .img-cont2{ width:34%; height:340px; }
@@ -537,4 +646,50 @@ table.tbl tr:hover td{ background:var(--field); }
     .form_cont{ max-width:900px; }
     .cart_cont, .delivery-container{ max-width:960px; }
     .admin_cont{ max-width:1200px; }
+}
+
+/* ---------- responsive additions for the new parts ---------- */
+@media (max-width: 767.98px){
+    #nav_buttons{ position:relative; flex-wrap:wrap; justify-content:center; border-radius:26px; padding:6px 8px; gap:2px; }
+    a.nav1{ padding:6px 11px; }
+    .landing_hero{ flex-direction:column; padding:0 12px 300px; min-height:max(600px, calc(100vh - 100px)); }
+    .ap_grid{ grid-template-columns:1fr; }
+    .sbar{ grid-template-columns:1fr 60px; }
+    .sbar .meter{ grid-column:1 / -1; order:3; }
+    .order_pill{ height:110px; }
+    .order_msg{ font-size:22px; }
+}
+@media (min-width: 768px) and (max-width: 991.98px){
+    #nav_buttons{ border-radius:32px; }
+    a.nav1{ padding:7px 12px; }
+    .ap_grid{ grid-template-columns:1fr 1fr; }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px){
+    #h_title{ font-size:40px; }
+    #nav_buttons{ right:28px; }
+    a.nav1{ padding:9px 12px; }
+}
+
+/* admin links on tablet / small desktop: the header stacks (title on top, navbar below) so nothing overlaps */
+@media (min-width: 768px) and (max-width: 1399.98px){
+    header:has(a[href="dashboard.html"]){ height:auto; flex-direction:column; padding:10px 8px; gap:8px; }
+    header:has(a[href="dashboard.html"]) #h_title-cont{ position:static; }
+    header:has(a[href="dashboard.html"]) #nav_buttons{ position:relative; right:auto; max-width:none; flex-wrap:wrap; justify-content:center; }
+}
+
+/* phones: the navbar never gets wider than the screen */
+@media (max-width: 767.98px){
+    #nav_buttons{ max-width:calc(100% - 16px); box-sizing:border-box; }
+}
+
+/* phones: the navbar sits in the normal flow (not pushed by the desktop "right" value) */
+@media (max-width: 767.98px){
+    #nav_buttons{ right:auto; left:auto; }
+}
+/* tablets: the header always stacks (title on top, navbar below) */
+@media (min-width: 768px) and (max-width: 991.98px){
+    header{ height:auto; flex-direction:column; padding:10px 8px; gap:8px; }
+    #h_title-cont{ position:static; }
+    #nav_buttons{ position:relative; right:auto; max-width:none; flex-wrap:wrap; justify-content:center; }
 }
