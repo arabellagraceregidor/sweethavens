@@ -54,25 +54,6 @@
     paintTheme();
     tb.onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; paintTheme(); try { localStorage.setItem('sh_theme', theme); } catch (e) {} };
 
-    /* ---- header: admin-only links, log out, current page ---- */
-    var u = user(), nav = $('#nav_buttons');
-    if (nav) {
-        var last = nav.lastElementChild, add = function (href, text, id) {
-            var d = document.createElement('div');
-            d.innerHTML = '<a class="nav1"' + (id ? ' id="' + id + '"' : '') + ' href="' + href + '">' + text + '</a>';
-            nav.insertBefore(d, last);
-        };
-        if (u && u.role === 'admin') { add('dashboard.html', 'Dashboard'); add('admin_orders.html', 'Orders'); }
-        if (u) {
-            add('#', 'Log Out', 'logout_link');
-            $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
-            var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
-        }
-        var here = location.pathname.split('/').pop() || 'home_page.html';
-        $$('a.nav1', nav).forEach(function (a) { if (a.getAttribute('href') === here) a.classList.add('here'); });
-    }
-    try { var fl = sessionStorage.getItem('sh_flash'); if (fl) { sessionStorage.removeItem('sh_flash'); toast(fl); } } catch (e) {}
-
     /* ---- home page: Learn More / Add to cart / Order Now ---- */
     function modal(html) {
         var m = $('#modal');
