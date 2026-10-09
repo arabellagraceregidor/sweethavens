@@ -37,6 +37,31 @@
     var contact = $('#contact');
     if (contact) contact.addEventListener('input', function () { contact.value = contact.value.replace(/\D/g, ''); });
 
+    /* Capitalize first letter (names / city); ALL CAPS for region */
+    function capFirst(s) {
+        s = String(s || '');
+        if (!s) return s;
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function wireCap(id, mode) {
+        var el = $('#' + id); if (!el) return;
+        el.addEventListener('input', function () {
+            var start = el.selectionStart, end = el.selectionEnd, v = el.value;
+            el.value = mode === 'upper' ? v.toUpperCase() : capFirst(v);
+            try { el.setSelectionRange(start, end); } catch (e) {}
+            clearBad(el);
+        });
+        el.addEventListener('blur', function () {
+            el.value = mode === 'upper' ? el.value.trim().toUpperCase() : capFirst(el.value.trim());
+        });
+    }
+    if (isSignup) {
+        wireCap('f_name', 'first');
+        wireCap('l_name', 'first');
+        wireCap('city', 'first');
+        wireCap('region', 'upper');
+    }
+
     function bad(i, m) { var f = i.closest('.field'); f.querySelector('.fl').classList.add('invalid'); f.querySelector('.ferr').textContent = m || ''; }
     function clearBad(i) { var f = i.closest('.field'); f.querySelector('.fl').classList.remove('invalid'); f.querySelector('.ferr').textContent = ''; msg.textContent = ''; }
     function jump(i) { i.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { i.focus({ preventScroll: true }); } catch (e) { i.focus(); } }
@@ -62,7 +87,10 @@
         var first = validate();
         if (first) { jump(first); return; }
         if (isSignup) {
-            var users = S.get('sh_users', []), name = val('f_name') + ' ' + val('l_name');
+            var fn = capFirst(val('f_name')), ln = capFirst(val('l_name'));
+            var users = S.get('sh_users', []), name = fn + ' ' + ln;
+            $('#f_name').value = fn; $('#l_name').value = ln;
+            $('#region').value = val('region').toUpperCase(); $('#city').value = capFirst(val('city'));
             if (users.some(function (u) { return norm(u.name) === norm(name); }) || STAFF.some(function (s) { return norm(s.name) === norm(name); })) {
                 bad($('#f_name'), 'This account already exists. Please log in.'); jump($('#f_name')); return;
             }

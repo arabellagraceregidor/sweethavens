@@ -18,9 +18,15 @@
     ];
     var BASE = CATALOG.slice();
     var customList = function () { return S.get('sh_products', []); };
+    var edits = function () { return S.get('sh_edits', {}); };
     /* products = the 6 from the design + any product the admin added (name, price, stock, photo) */
     var catalog = function () {
-        return BASE.concat(customList().map(function (p) { return { n: p.n, p: p.p, s: p.s, custom: true, id: p.id, img: p.img, d: p.d }; }));
+        var ed = edits();
+        var base = BASE.filter(function (c) { return !(ed[c.n] && ed[c.n].deleted); }).map(function (c) {
+            var e = ed[c.n] || {};
+            return { n: c.n, p: e.p != null ? e.p : c.p, s: c.s, img: e.img, d: e.d, base: true };
+        });
+        return base.concat(customList().map(function (p) { return { n: p.n, p: p.p, s: p.s, custom: true, id: p.id, img: p.img, d: p.d, t: p.t }; }));
     };
     var find = function (n) { return catalog().filter(function (c) { return norm(c.n) === norm(n); })[0]; };
     var user = function () { return S.get('sh_user', null); };
@@ -62,8 +68,28 @@
 
     /* ---- header: admin-only links, log out, current page ---- */
     var u = user();
-    if (u && u.role === 'admin') { nav = $('#admin_nav_buttons') }
-    else { nav = $('#nav_buttons') };
+    var nav = $('#admin_nav_buttons') || $('#nav_buttons');
+    /* Admin viewing the shop menu: keep admin nav (no About Us / Nearest Shop / Cart) */
+    if (u && u.role === 'admin' && $('#nav_buttons') && !$('#admin_nav_buttons')) {
+        var cust = $('#nav_buttons'), pfp = cust.lastElementChild;
+        cust.id = 'admin_nav_buttons';
+        cust.innerHTML = '';
+        [
+            ['dashboard.html', 'Dashboard'],
+            ['create_products.html', 'Create'],
+            ['inventory.html', 'Inventory'],
+            ['schedule_mngmt.html', 'Schedules'],
+            ['admin_orders.html', 'Orders'],
+            ['home_page.html#weekly', 'Menu']
+        ].forEach(function (x) {
+            var d = document.createElement('div');
+            d.innerHTML = '<a class="nav1" href="' + x[0] + '">' + x[1] + '</a>';
+            cust.appendChild(d);
+        });
+        if (pfp) cust.appendChild(pfp);
+        var title = $('#h_title'); if (title) title.setAttribute('href', 'dashboard.html');
+        nav = cust;
+    }
     if (nav) {
         var last = nav.lastElementChild, add = function (href, text, id) {
             var d = document.createElement('div');
@@ -75,13 +101,13 @@
             $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
             var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
         }
-        /* the Menu button now works: it goes to the menu on the home page */
+        /* Menu always opens the product menu; admin nav stays when viewing it */
         $$('a.nav1', nav).forEach(function (a) {
             if (!a.getAttribute('href') && a.textContent.trim() === 'Menu') a.setAttribute('href', 'home_page.html#weekly');
         });
         var here = location.pathname.split('/').pop() || 'home_page.html';
         $$('a.nav1', nav).forEach(function (a) {
-            var h = a.getAttribute('href');
+            var h = (a.getAttribute('href') || '').split('#')[0];
             if (h === here || (here === 'home_page.html' && a.textContent.trim() === 'Menu')) a.classList.add('here');
         });
         /* modern navbar: a pill that slides under the link you point at */

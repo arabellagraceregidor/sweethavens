@@ -29,7 +29,7 @@
             var sub = items.reduce(function (a, x) { return a + x.qty * x.price; }, 0), mode = rnd() > .35 ? 'Delivery' : 'Pick Up', fee = mode === 'Delivery' ? 50 : 0;
             var id = ''; for (var j = 0; j < 7; j++) id += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(rnd() * 26)];
             made.push({ id: id, name: names[Math.floor(rnd() * names.length)], mode: mode, addr: mode === 'Delivery' ? 'Manila, 1000 Metro Manila' : 'Pick up at the shop',
-                pay: ['Cash on Delivery', 'Credit/Debit Card', 'PayPal'][Math.floor(rnd() * 3)], items: items, sub: sub, fee: fee, total: sub + fee,
+                pay: ['Cash on Delivery', 'Credit/Debit Card', 'GCash'][Math.floor(rnd() * 3)], items: items, sub: sub, fee: fee, total: sub + fee,
                 status: i < 2 ? 'Pending' : i < 4 ? 'Preparing' : i === 4 ? 'Ready' : (i === 9 || i === 17) ? 'Cancelled' : 'Completed',
                 date: new Date(Date.now() - Math.floor(i / 1.9) * DAY - i * 2.3e6).toISOString(), sample: true });
         }
@@ -196,5 +196,129 @@
             o.status = now; S.set('sh_orders', all); SH.saveStock(st); SH.toast('Order #' + o.id + ' is now ' + now); drawOrders();
         });
         drawOrders();
+    }
+
+    /* ---------------- CREATE PRODUCTS (add / modify / delete) ---------------- */
+    if ($('#createProducts')) {
+        var cpPhoto = '', epPhoto = '', editKey = null, editCustom = false;
+        var cpMsg = function (m, bad) { var e = $('#cp_msg'); e.textContent = m; e.style.color = bad ? 'var(--err)' : 'var(--mar)'; };
+        var epMsg = function (m, bad) { var e = $('#ep_msg'); e.textContent = m; e.style.color = bad ? 'var(--err)' : 'var(--mar)'; };
+        var readImg = function (file, done, fail) {
+            if (!file) return;
+            if (!/^image\//.test(file.type)) { fail('Please choose an image file.'); return; }
+            var r = new FileReader();
+            r.onload = function () {
+                var im = new Image();
+                im.onload = function () {
+                    var sc = Math.min(1, 600 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+                    c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                    done(c.toDataURL('image/webp', .85), file.name);
+                };
+                im.src = r.result;
+            };
+            r.readAsDataURL(file);
+        };
+        var clearAdd = function () {
+            ['flavor', 'price', 'type', 'desc'].forEach(function (id) { $('#' + id).value = ''; });
+            cpPhoto = ''; $('#cp_prev').style.backgroundImage = ''; $('#cp_fn').textContent = 'No photo selected'; $('#cp_file').value = '';
+        };
+        var closeEdit = function () {
+            editKey = null; editCustom = false; epPhoto = '';
+            $('#cp_editPanel').hidden = true; $('#ep_msg').textContent = '';
+            $('#ep_price').value = ''; $('#ep_prev').style.backgroundImage = ''; $('#ep_fn').textContent = 'Keep current photo'; $('#ep_file').value = '';
+        };
+        var drawList = function () {
+            var C = cat();
+            $('#cp_list').innerHTML = '<tr><th>Product</th><th>Type</th><th>Price</th><th>Actions</th></tr>' + (C.length ? C.map(function (c) {
+                var key = c.custom ? c.id : c.n;
+                return '<tr><td>' + (c.img ? '<img class="thumb" src="' + esc(c.img) + '" alt="">' : '') + esc(c.n) +
+                    '</td><td>' + esc(c.t || (c.custom ? 'Custom' : 'Catalog')) +
+                    '</td><td>' + fmt(c.p) +
+                    '</td><td><button type="button" class="mini wide" data-edit="' + esc(key) + '" data-custom="' + (c.custom ? '1' : '0') + '">Modify</button> ' +
+                    '<button type="button" class="mini wide del" data-rm="' + esc(key) + '" data-custom="' + (c.custom ? '1' : '0') + '">Delete</button></td></tr>';
+            }).join('') : '<tr><td colspan="4" class="empty">No products yet.</td></tr>');
+        };
+
+        $('#cp_pick').addEventListener('click', function () { $('#cp_file').click(); });
+        $('#cp_file').addEventListener('change', function () {
+            readImg(this.files[0], function (data, name) {
+                cpPhoto = data; $('#cp_prev').style.backgroundImage = 'url(' + data + ')'; $('#cp_fn').textContent = name; cpMsg('');
+            }, function (m) { cpMsg(m, 1); });
+        });
+        $('#cp_save').addEventListener('click', function () {
+            var nm = $('#flavor'), pr = $('#price'), bad = [];
+            [nm, pr].forEach(function (i) { i.classList.remove('invalid'); });
+            if (!nm.value.trim()) bad.push(nm);
+            if (!(+pr.value > 0)) bad.push(pr);
+            if (bad.length) { bad.forEach(function (i) { i.classList.add('invalid'); }); bad[0].focus(); cpMsg('Please fill in the flavor and price.', 1); return; }
+            if (cat().some(function (c) { return SH.norm(c.n) === SH.norm(nm.value); })) { nm.classList.add('invalid'); cpMsg('That product already exists.', 1); return; }
+            var list = S.get('sh_products', []);
+            list.push({ id: 'p' + Date.now(), n: nm.value.trim(), p: +pr.value, s: 30, d: $('#desc').value.trim(), t: $('#type').value.trim(), img: cpPhoto });
+            S.set('sh_products', list);
+            var st = SH.stock(); st[nm.value.trim()] = 30; SH.saveStock(st);
+            clearAdd(); cpMsg('Product added! It now shows on the home page.'); drawList();
+        });
+
+        $('#ep_pick').addEventListener('click', function () { $('#ep_file').click(); });
+        $('#ep_file').addEventListener('change', function () {
+            readImg(this.files[0], function (data, name) {
+                epPhoto = data; $('#ep_prev').style.backgroundImage = 'url(' + data + ')'; $('#ep_fn').textContent = name; epMsg('');
+            }, function (m) { epMsg(m, 1); });
+        });
+        $('#ep_cancel').addEventListener('click', closeEdit);
+        $('#ep_save').addEventListener('click', function () {
+            if (!editKey) return;
+            var pr = $('#ep_price'); pr.classList.remove('invalid');
+            if (!(+pr.value > 0)) { pr.classList.add('invalid'); epMsg('Enter a valid price.', 1); return; }
+            if (editCustom) {
+                var list = S.get('sh_products', []), p = list.filter(function (x) { return x.id === editKey; })[0];
+                if (!p) { epMsg('Product not found.', 1); return; }
+                p.p = +pr.value; if (epPhoto) p.img = epPhoto;
+                S.set('sh_products', list);
+            } else {
+                var ed = S.get('sh_edits', {});
+                ed[editKey] = ed[editKey] || {};
+                ed[editKey].p = +pr.value;
+                if (epPhoto) ed[editKey].img = epPhoto;
+                S.set('sh_edits', ed);
+            }
+            SH.toast('Product updated'); closeEdit(); drawList();
+        });
+
+        $('#cp_list').addEventListener('click', function (e) {
+            var mod = e.target.closest('[data-edit]'), rm = e.target.closest('[data-rm]');
+            if (mod) {
+                editKey = mod.getAttribute('data-edit');
+                editCustom = mod.getAttribute('data-custom') === '1';
+                epPhoto = '';
+                var item = editCustom
+                    ? S.get('sh_products', []).filter(function (x) { return x.id === editKey; })[0]
+                    : cat().filter(function (x) { return x.n === editKey; })[0];
+                if (!item) return;
+                $('#cp_editName').textContent = 'Editing: ' + (item.n || editKey);
+                $('#ep_price').value = item.p;
+                $('#ep_prev').style.backgroundImage = item.img ? 'url(' + item.img + ')' : '';
+                $('#ep_fn').textContent = item.img ? 'Current photo' : 'No photo yet';
+                $('#ep_file').value = ''; $('#ep_msg').textContent = '';
+                $('#cp_editPanel').hidden = false;
+                $('#cp_editPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (rm) {
+                var key = rm.getAttribute('data-rm'), isCustom = rm.getAttribute('data-custom') === '1';
+                if (!confirm('Delete this product?')) return;
+                if (isCustom) {
+                    S.set('sh_products', S.get('sh_products', []).filter(function (p) { return p.id !== key; }));
+                } else {
+                    var ed = S.get('sh_edits', {});
+                    ed[key] = ed[key] || {};
+                    ed[key].deleted = true;
+                    S.set('sh_edits', ed);
+                }
+                if (editKey === key) closeEdit();
+                SH.toast('Product removed'); drawList();
+            }
+        });
+        drawList();
     }
 })();
