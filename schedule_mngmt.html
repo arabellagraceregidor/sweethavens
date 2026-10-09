@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SweetHavens</title>
+        <title>SweetHavens - Schedules</title>
         <link rel="stylesheet" href="home.css">
     </head>
     <body>
         <header>
             <div id="h_title-cont">
                 <img src="assets/Logo.png" id="logo">
-                <div><p><a id="h_title" href="dashboard.html">SweetHavens</a></p></div>
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
             </div>
 
             <!-- Header Navigation buttons-->
@@ -24,39 +24,50 @@
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
-        <main>
-            <h1>Sweethavens Branches</h1>
-            <table>
-                <tr>
-                    <th>Branch name</th>
-                    <th>Location</th>
-                    <th>Store Hours</th>
-                </tr>
 
-                <!--Sample Schedule-->
-                <tr>
-                    <td>Technological University of the Philippines - Manila</td>
-                    <td>Ermita, Manila</td>
-                    <td>9:00 AM - 5:00 PM</td>
-                </tr>
-            </table>
-            <div>
-                <h2>Update Store hours?</h2>
+        <div class="admin_cont">
+            <h1>SweetHavens Branches</h1>
+            <p class="sub">View branch locations and update store hours</p>
+
+            <div class="panel2">
+                <h2>Branch schedules</h2>
+                <div class="tbl_wrap">
+                    <table class="tbl">
+                        <tr>
+                            <th>Branch name</th>
+                            <th>Location</th>
+                            <th>Store Hours</th>
+                        </tr>
+                        <!--Sample Schedule-->
+                        <tr>
+                            <td>Technological University of the Philippines - Manila</td>
+                            <td>Ermita, Manila</td>
+                            <td><span class="pill_s">9:00 AM - 5:00 PM</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel2">
+                <h2>Update Store Hours</h2>
                 <form>
-                    <label for="branch">Branch Name:</label><br>
-                    <input list="name" name="branch" placeholder="--" required>
-                    <datalist id="name">
-                        <option value="Technological University of the Philippines - Manila">
-                        <option value="Technological University of the Philippines - Manila"></option>
-                    </datalist><br>
-
-                    <label for="sched">New Schedule:</label><br>
-                    <input type="text" name="sched" id="sched" placeholder="9:00 AM - 5:00 PM" required>
-
-                    <button type="submit">Update</button>
+                    <div class="ap_grid">
+                        <div class="full">
+                            <label for="branch">Branch Name</label>
+                            <input type="text" list="name" id="branch" name="branch" placeholder="Select a branch" required>
+                            <datalist id="name">
+                                <option value="Technological University of the Philippines - Manila">
+                            </datalist>
+                        </div>
+                        <div class="full">
+                            <label for="sched">New Schedule</label>
+                            <input type="text" name="sched" id="sched" placeholder="9:00 AM - 5:00 PM" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn_dark">Update</button>
                 </form>
             </div>
-        </main>
+        </div>
         <script src="site.js"></script>
         <script src="admin.js"></script>
     </body>

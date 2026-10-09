@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SweetHavens</title>
+        <title>SweetHavens - Create Products</title>
         <link rel="stylesheet" href="home.css">
     </head>
     <body>
         <header>
             <div id="h_title-cont">
                 <img src="assets/Logo.png" id="logo">
-                <div><p><a id="h_title" href="dashboard.html">SweetHavens</a></p></div>
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
             </div>
 
             <!-- Header Navigation buttons-->
@@ -24,29 +24,40 @@
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
-        <main>
+
+        <div class="admin_cont">
             <h1>Create Products</h1>
-            <form>
-                <label for="flavor">Product Flavor:</label><br>
-                <input type="text" id="flavor" name="password" placeholder="Matcha Melties" required><br>
+            <p class="sub">Add a new flavor to the SweetHavens menu</p>
 
-                <label for="desc">Product Description:</label><br>
-                <input type="text" id="desc" name="desc" placeholder="--" required><br>
-
-                <label for="price">Product Price:</label><br>
-                <input type="number" id="price" name="price" placeholder="59" required><br>
-
-                <label for="type">Product Type:</label><br>
-                <input list="type" name="type" placeholder="--" required><br>
-                <datalist id="type">
-                    <option value="Weekly bakes">
-                    <option value="Classic Flavors">
-                </datalist>
-
-                <!--Temporary nav link to dashboard-->
-                <button type="submit"><a href="dashboard.html">Add Product</a></button>
-            </form>
-        </main>
+            <div class="panel2">
+                <h2>Add Product</h2>
+                <form>
+                    <div class="ap_grid">
+                        <div>
+                            <label for="flavor">Product Flavor</label>
+                            <input type="text" id="flavor" name="flavor" placeholder="Matcha Melties" required>
+                        </div>
+                        <div>
+                            <label for="price">Product Price (&#8369;)</label>
+                            <input type="number" id="price" name="price" placeholder="59" min="1" required>
+                        </div>
+                        <div>
+                            <label for="type">Product Type</label>
+                            <input type="text" list="typeList" id="type" name="type" placeholder="Weekly bakes" required>
+                            <datalist id="typeList">
+                                <option value="Weekly bakes">
+                                <option value="Classic Flavors">
+                            </datalist>
+                        </div>
+                        <div class="full">
+                            <label for="desc">Product Description</label>
+                            <input type="text" id="desc" name="desc" placeholder="Soft and chewy cookies..." required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn_dark">Add Product</button>
+                </form>
+            </div>
+        </div>
         <script src="site.js"></script>
         <script src="admin.js"></script>
     </body>
