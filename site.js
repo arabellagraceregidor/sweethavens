@@ -61,14 +61,15 @@
     tb.onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; paintTheme(); try { localStorage.setItem('sh_theme', theme); } catch (e) {} };
 
     /* ---- header: admin-only links, log out, current page ---- */
-    var u = user(), nav = $('#nav_buttons');
+    var u = user();
+    if (u && u.role === 'admin') { nav = $('#admin_nav_buttons') }
+    else { nav = $('#nav_buttons') };
     if (nav) {
         var last = nav.lastElementChild, add = function (href, text, id) {
             var d = document.createElement('div');
             d.innerHTML = '<a class="nav1"' + (id ? ' id="' + id + '"' : '') + ' href="' + href + '">' + text + '</a>';
             nav.insertBefore(d, last);
         };
-        if (u && u.role === 'admin') { add('dashboard.html', 'Dashboard'); add('admin_orders.html', 'Orders'); }
         if (u) {
             add('#', 'Log Out', 'logout_link');
             $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
