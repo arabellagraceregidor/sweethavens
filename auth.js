@@ -90,14 +90,14 @@
     /* sliding panel between Login and Create Account */
     var TEXT = { signup: 'Create your account to start ordering your favorite treats.', login: 'Welcome back! Enter your details to continue.' };
     var cur = document.createElement('div'); cur.className = 'curtain'; cur.innerHTML = '<p></p>'; document.body.appendChild(cur);
-    var EASE = 'cubic-bezier(.7,0,.3,1)';
+    var EASE = 'cubic-bezier(.4,0,.6,1)';
     var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     function go(url, to) {
         if (still || !cur.animate) { location.href = url; return; }
         var r = to === 'signup';
         cur.querySelector('p').textContent = TEXT[to]; cur.className = 'curtain' + (r ? '' : ' toL'); cur.style.display = 'flex';
         try { sessionStorage.setItem('sh_cur', to); } catch (x) {}
-        cur.animate([{ transform: 'translateX(' + (r ? 100 : -100) + '%)' }, { transform: 'translateX(0)' }], { duration: 450, easing: EASE, fill: 'forwards' })
+        cur.animate([{ transform: 'translateX(' + (r ? 100 : -100) + '%)' }, { transform: 'translateX(0)' }], { duration: 1050, easing: EASE, fill: 'forwards' })
             .onfinish = function () { location.href = url; };
     }
     Array.prototype.forEach.call(document.querySelectorAll('a[href="login.html"], a[href="signup.html"]'), function (a) {
@@ -107,12 +107,4 @@
             var h = a.getAttribute('href'); go(h, h === 'signup.html' ? 'signup' : 'login');
         });
     });
-    var came = null;
-    try { came = sessionStorage.getItem('sh_cur'); sessionStorage.removeItem('sh_cur'); } catch (x) {}
-    if (came && !still && cur.animate) {
-        var r2 = came === 'signup';
-        cur.querySelector('p').textContent = TEXT[came]; cur.className = 'curtain' + (r2 ? '' : ' toL'); cur.style.display = 'flex';
-        cur.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (r2 ? -100 : 100) + '%)' }], { duration: 450, easing: EASE, fill: 'forwards' })
-            .onfinish = function () { cur.style.display = 'none'; };
-    }
 })();

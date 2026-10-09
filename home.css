@@ -34,7 +34,7 @@ footer{
 }
 #h_title {
     font-family: my-font;
-    font-size: 48px;
+    font-size: 36px;
     font-weight: bold;
     color: #E08EAA;
     -webkit-text-stroke: 5px #fff;
@@ -428,7 +428,7 @@ table.tbl tr:hover td{ background:var(--field); }
 .filters input{ flex:1; min-width:180px; }
 
 /* ---------- animations ---------- */
-.info-btn, .order-btn, .cart-btn, #h_button, .btn_dark, .landing_go, #login_btn{ transition:transform .15s, filter .2s, background-color .2s; }
+.info-btn, .order-btn, .cart-btn, .btn_dark, .landing_go, #login_btn{ transition:transform .15s, filter .2s, background-color .2s; }
 .info-btn:hover, .order-btn:hover, .cart-btn:hover, #login_btn:hover{ transform:translateY(-2px); filter:brightness(1.06); }
 @view-transition{ navigation:auto; }
 @keyframes slideOut{ to{ transform:translateX(-12%); opacity:0; } }
