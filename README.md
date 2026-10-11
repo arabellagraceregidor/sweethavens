@@ -1,4 +1,4 @@
-# SweetHavens - Cookie Bakeshop Website Proposal
+# SweetHavens - Cookie Bakeshop Website 
 
 This project is a web-based e-commerce proposal for **SweetHavens**, a fictional cookie bakeshop. The website is designed to provide customers with an easy way to browse products, place orders, and track deliveries, while offering store owners a centralized system for inventory and schedule management.
 
