@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SweetHavens - Create Products</title>
+        <link rel="stylesheet" href="home.css">
+    </head>
+    <body>
+        <header>
+            <div id="h_title-cont">
+                <img src="assets/Logo.png" id="logo">
+                <div><p><a id="h_title" href="dashboard.html">SweetHavens</a></p></div>
+            </div>
+
+            <!-- Header Navigation buttons-->
+            <div id="admin_nav_buttons">
+                <div><nav><a class="nav1" href="dashboard.html">Dashboard</a></nav></div>
+                <div><a class="nav1" href="create_products.html">Create</a></div>
+                <div><a class="nav1" href="inventory.html">Inventory</a></div>
+                <div><a class="nav1" href="schedule_mngmt.html">Schedules</a></div>
+                <div><a class="nav1" href="admin_orders.html">Orders</a></div>
+                <div><a class="nav1">Menu</a></div>
+
+                    <!-- Temporary login button-->
+                <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
+            </div>
+        </header>
+
+        <div class="admin_cont" id="createProducts">
+            <h1>Create Products</h1>
+            <p class="sub">Add, modify, or remove flavors from the SweetHavens menu</p>
+
+            <div class="panel2">
+                <h2>Add Product</h2>
+                <div class="ap_grid">
+                    <div>
+                        <label for="flavor">Product Flavor</label>
+                        <input type="text" id="flavor" name="flavor" placeholder="Matcha Melties">
+                    </div>
+                    <div>
+                        <label for="price">Product Price (&#8369;)</label>
+                        <input type="number" id="price" name="price" placeholder="59" min="1">
+                    </div>
+                    <div>
+                        <label for="type">Product Type</label>
+                        <input type="text" list="typeList" id="type" name="type" placeholder="Weekly bakes">
+                        <datalist id="typeList">
+                            <option value="Weekly bakes">
+                            <option value="Classic Flavors">
+                        </datalist>
+                    </div>
+                    <div class="full">
+                        <label for="desc">Product Description</label>
+                        <input type="text" id="desc" name="desc" placeholder="Soft and chewy cookies...">
+                    </div>
+                    <div class="full">
+                        <label>Add Product Image</label>
+                        <div class="photo_row">
+                            <div class="photo_prev" id="cp_prev"></div>
+                            <input type="file" id="cp_file" accept="image/*" hidden>
+                            <button type="button" class="btn_dark" id="cp_pick">Add Photo</button>
+                            <span id="cp_fn">No photo selected</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="ap_msg" id="cp_msg"></p>
+                <button type="button" class="btn_dark" id="cp_save">Add Product</button>
+            </div>
+
+            <div class="panel2" id="cp_editPanel" hidden>
+                <h2>Modify Product</h2>
+                <p class="sub" id="cp_editName" style="margin-bottom:14px"></p>
+                <div class="ap_grid">
+                    <div>
+                        <label for="ep_price">Product Price (&#8369;)</label>
+                        <input type="number" id="ep_price" min="1" placeholder="59">
+                    </div>
+                    <div class="full">
+                        <label>Product Image</label>
+                        <div class="photo_row">
+                            <div class="photo_prev" id="ep_prev"></div>
+                            <input type="file" id="ep_file" accept="image/*" hidden>
+                            <button type="button" class="btn_dark" id="ep_pick">Change Photo</button>
+                            <span id="ep_fn">Keep current photo</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="ap_msg" id="ep_msg"></p>
+                <button type="button" class="btn_dark" id="ep_save">Save Changes</button>
+                <button type="button" class="mini wide" id="ep_cancel" style="margin-left:10px;height:44px">Cancel</button>
+            </div>
+
+            <div class="panel2">
+                <h2>Manage Products</h2>
+                <div class="tbl_wrap">
+                    <table class="tbl" id="cp_list"></table>
+                </div>
+            </div>
+        </div>
+        <script src="site.js"></script>
+        <script src="admin.js"></script>
+    </body>
+</html>
