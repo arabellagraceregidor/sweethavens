@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
     <head>
@@ -38,4 +39,46 @@
         </div>
         <script src="site.js"></script>
         <script src="auth.js"></script>
+=======
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SweetHavens - Login</title>
+        <link rel="stylesheet" href="home.css">
+    </head>
+    <body>
+        <header>
+            <div id="h_title-cont">
+                <div><img id="logo" src="assets/Logo.png"></div>
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
+            </div>
+        </header>
+
+        <!-- login and signup nav -->
+        <div>
+            <a id="login_button" href="login.html">Login</a>
+            <a id="signup_button" href="signup.html">Create Account</a>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form_cont">
+        <p class="form_header">Welcome back! Enter your details to continue.</p>
+        <form id="login_form">
+            <!-- Full name field -->
+            <label for="f_name">Full Name</label><br>
+            <input type="text" id="f_name" name="f_name" placeholder="Full Name"required><br><br>
+            
+            <!-- Password field -->
+            <label for="password">Password</label><br>
+            <input type="password" id="password" name="password" placeholder="Password" required><br><br>
+            
+            <!-- Temporary go to homepage nav -->
+            <button type="submit" id="login_btn"><a href="home_page.html">Login</a></button>
+            <button type="submit" id="admin_btn"><a href="dashboard.html">Login as Admin</a></button>
+            <p>No account yet? <a id="signup_button" href="signup.html">Create Account</a></p>
+        </form>
+        </div>
+        <script src="site.js"></script>
+        <script src="auth.js"></script>
+>>>>>>> e6f5e5511d6b6dcecbe27eddab0638b74871f279
     </body>
