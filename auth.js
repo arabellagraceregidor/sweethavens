@@ -29,6 +29,7 @@
         (label || i).before(field);
         if (label) { field.appendChild(label); if (i.required) label.classList.add('req'); }
         fl.appendChild(i); fl.appendChild(span); fl.appendChild(document.createElement('i'));
+        if (i.type === 'password') SH.eyeify(i, fl);   /* show / hide password */
         field.appendChild(fl); field.appendChild(err);
         i.addEventListener('input', function () { clearBad(i); });
     });
@@ -107,7 +108,9 @@
             if (wantAdmin && !(u && u.role === 'admin')) { bad($('#f_name')); bad($('#password')); msg.textContent = 'ADMIN ONLY!'; jump($('#f_name')); return; }
             if (!u) { bad($('#f_name')); bad($('#password')); msg.textContent = 'LOG IN FIRST FIRST!'; jump($('#f_name')); return; }
             S.set('sh_user', { name: u.name, role: u.role || 'customer' });
-            location.href = u.role === 'admin' ? 'dashboard.html' : 'home_page.html';
+            var back = '';
+            try { back = sessionStorage.getItem('sh_return') || ''; sessionStorage.removeItem('sh_return'); } catch (x) {}
+            location.href = u.role === 'admin' ? 'dashboard.html' : (back || 'home_page.html');
         }
     }
     /* the Login / Sign Up button has a temporary link inside it, so we take over the click */
