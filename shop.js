@@ -4,6 +4,28 @@
     if (SH.needLogin()) return;
     var FEE = 50;
 
+    /* ---------- estimated ready + arrival time ---------- */
+    function etaFor(items, mode) {
+        var qty = items.reduce(function (a, i) { return a + i.qty; }, 0);
+        var prep = Math.min(75, 30 + 5 * Math.max(0, qty - 1));                     /* minutes to bake and pack */
+        var ready = new Date(Date.now() + prep * 60000);
+        ready = new Date(Math.ceil(ready.getTime() / 300000) * 300000);              /* round up to 5 minutes */
+        var arrive = mode === 'Delivery' ? new Date(ready.getTime() + 30 * 60000) : null;   /* + 30 minutes ride */
+        return { prep: prep, ready: ready, arrive: arrive };
+    }
+    function when(d) {
+        d = new Date(d);
+        var now = new Date(), tm = new Date(now.getTime() + 864e5), t = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+        if (d.toDateString() === now.toDateString()) return 'Today, ' + t;
+        if (d.toDateString() === tm.toDateString()) return 'Tomorrow, ' + t;
+        return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) + ', ' + t;
+    }
+    function etaReceipt(o) {
+        if (!o.readyAt) return '';
+        return '<div class="receipt_line" style="font-size:18px"><span>' + (o.mode === 'Delivery' ? 'Estimated ready' : 'Ready for pick up by') + '</span><b>' + when(o.readyAt) + '</b></div>' +
+            (o.arriveAt ? '<div class="receipt_line" style="font-size:18px"><span>Estimated arrival</span><b>' + when(o.arriveAt) + '</b></div>' : '');
+    }
+
     /* order complete: the page behind blurs (74%) and a truck loads the package, then we go to the "order placed" page */
     function showOrderOverlay() {
         var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,11 +42,30 @@
     /* ---------- CART ---------- */
     var wrap = $('.cart_cont');
     if (wrap) {
+        /* wishlist: a hollow heart on the right side of the cart; click it to see the saved products */
+        var wishOpen = false;
+        var wishPanel = function () {
+            var l = SH.wishList(), rows;
+            if (!l.length) rows = '<p class="empty" style="margin:10px 0">No products in your wishlist yet. Tap the heart on a product to save it.</p>';
+            else rows = l.map(function (w, i) {
+                var p = SH.find(w.name);
+                return '<div class="wish_row"><div class="cart_img-cont"><img class="cart_img" src="' + esc(w.img || (p && p.img) || 'assets/Logo.png') + '" alt=""></div>' +
+                    '<div class="cart_info-cont"><p class="cart_name">' + esc(w.name) + '</p><p class="cart_price">' + (p ? fmt(p.p) : 'Not available right now') + '</p></div>' +
+                    '<div class="wish_actions">' + (p ? '<button type="button" class="wish_add" data-i="' + i + '">Add to cart</button>' : '') +
+                    '<button type="button" class="wish_rm on" data-i="' + i + '" title="Remove from wishlist" aria-label="Remove ' + esc(w.name) + ' from wishlist">' + SH.HEART + '</button></div></div>';
+            }).join('');
+            return '<div class="wish_panel" id="wish_panel"' + (wishOpen ? '' : ' hidden') + '><h2>My Wishlist</h2>' + rows + '</div>';
+        };
+        var wishHead = function () {
+            var n = SH.wishList().length;
+            return '<div class="wish_top"><button type="button" class="wish_toggle' + (wishOpen ? ' open' : '') + '" aria-expanded="' + wishOpen + '" title="My wishlist" aria-label="My wishlist">' +
+                SH.HEART + '<span class="wish_count"' + (n ? '' : ' hidden') + '>' + n + '</span></button></div>' + wishPanel();
+        };
         var drawCart = function () {
             var c = SH.cart();
-            if (!c.length) { wrap.innerHTML = '<p class="empty">Your cart is empty. Add a cookie from the Menu!</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>'; return; }
+            if (!c.length) { wrap.innerHTML = wishHead() + '<p class="empty">Your cart is empty. Add a cookie from the Menu!</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>'; return; }
             var sub = 0;
-            wrap.innerHTML = c.map(function (it, i) {
+            wrap.innerHTML = wishHead() + c.map(function (it, i) {
                 sub += it.price * it.qty;
                 return '<div class="cart_card"><div class="cart_img-cont"><img src="' + esc(it.img) + '" class="cart_img"></div>' +
                     '<div class="cart_info-cont"><p class="cart_name">' + esc(it.name) + '</p><p class="cart_price">' + fmt(it.price) + '</p></div>' +
@@ -34,6 +75,17 @@
                 '<button type="submit" class="cart_checkout"><a href="delivery.html">Proceed to Checkout</a></button>';
         };
         wrap.addEventListener('click', function (e) {
+            var wt = e.target.closest('.wish_toggle'), wa = e.target.closest('.wish_add'), wr = e.target.closest('.wish_rm');
+            if (wt) { wishOpen = !wishOpen; drawCart(); return; }
+            if (wa || wr) {
+                var wl = SH.wishList(), w = wl[+(wa || wr).getAttribute('data-i')]; if (!w) return;
+                if (wa) {
+                    var p = SH.find(w.name), cc = SH.cart(), hit = cc.filter(function (x) { return SH.norm(x.name) === SH.norm(w.name); })[0];
+                    if (hit) hit.qty++; else cc.push({ name: w.name, price: p ? p.p : 0, img: w.img || (p && p.img) || 'assets/Logo.png', qty: 1 });
+                    SH.saveCart(cc); SH.cartToast(w.name);
+                } else { SH.toggleWish(w.name); SH.toast(w.name + ' was removed from your wishlist.'); }
+                drawCart(); return;
+            }
             var b = e.target.closest('.cart_minus, .cart_plus'); if (!b) return;
             var c = SH.cart(), i = +b.getAttribute('data-i');
             c[i].qty += b.classList.contains('cart_plus') ? 1 : -1;
@@ -85,10 +137,20 @@
             if (payWrap) payWrap.classList.remove('invalid');
             showPayPanels();
         };
+        /* estimated ready / arrival time shown under the order summary */
+        var etaBox = document.createElement('div'); etaBox.className = 'eta_box';
+        var sumBox = $('.summary'); if (sumBox) sumBox.after(etaBox);
+        var etaPaint = function () {
+            var e = etaFor(SH.cart(), mode);
+            etaBox.innerHTML = '<h2>Estimated Time</h2><div class="eta_row"><span>' + (mode === 'Delivery' ? 'Estimated ready' : 'Ready for pick up by') + '</span><b>' + when(e.ready) + '</b></div>' +
+                (e.arrive ? '<div class="eta_row"><span>Estimated arrival</span><b>' + when(e.arrive) + '</b></div>' : '') +
+                '<p class="eta_note">Times can change depending on traffic and how many orders we have.</p>';
+        };
+        setInterval(etaPaint, 60000);
         var paint = function () {
             var t = totals(), p = $$('.summary div p:nth-child(2)');
             p[0].textContent = fmt(t.sub); p[1].textContent = fmt(t.fee); p[2].textContent = fmt(t.tot);
-            addr.required = mode === 'Delivery'; stars(); showPayPanels();
+            addr.required = mode === 'Delivery'; stars(); showPayPanels(); etaPaint();
         };
         var digits = function (s) { return String(s || '').replace(/\D/g, ''); };
         var waitPay = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
@@ -207,7 +269,8 @@
                 SH.saveStock(st);
                 var orders = S.get('sh_orders', []);
                 orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value,
-                    items: c.map(function (i) { return { name: i.name, qty: i.qty, price: i.price }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString() });
+                    items: c.map(function (i) { return { name: i.name, qty: i.qty, price: i.price, img: i.img }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString(),
+                    readyAt: etaFor(c, mode).ready.toISOString(), arriveAt: etaFor(c, mode).arrive ? etaFor(c, mode).arrive.toISOString() : null });
                 S.set('sh_orders', orders); S.set('sh_last', id); SH.saveCart([]);
                 showOrderOverlay();
             };
@@ -232,6 +295,93 @@
         var b0 = fin.querySelector('button'), rb = document.createElement('button');
         rb.innerHTML = '<a href="receipt.html">View Receipt</a>';
         b0.after(rb);
+        var tr = document.createElement('button'); tr.innerHTML = '<a href="my_orders.html">Track Order</a>'; rb.after(tr);
+        var lo = S.get('sh_orders', []).filter(function (x) { return x.id === S.get('sh_last', ''); })[0];
+        if (lo && lo.readyAt) {
+            var ep = document.createElement('p'); ep.className = 'eta_line';
+            ep.innerHTML = (lo.arriveAt ? 'Estimated arrival: <b>' + when(lo.arriveAt) + '</b>' : 'Ready for pick up by: <b>' + when(lo.readyAt) + '</b>');
+            b0.before(ep);
+        }
+    }
+
+    /* ---------- MY ORDERS: order status tracking (layout follows the "order tracking" reference photo) ---------- */
+    var mo = $('#my_orders');
+    if (mo) {
+        var STEPS = { 'Delivery': ['Order placed', 'Preparing', 'Out for delivery', 'Delivered'], 'Pick Up': ['Order placed', 'Preparing', 'Ready for pick up', 'Picked up'] };
+        var IDX = { Pending: 0, Preparing: 1, Ready: 2, Completed: 3 };
+        var TABS = [['All', null], ['To Prepare', ['Pending', 'Preparing']], ['To Receive', ['Ready']], ['Completed', ['Completed']], ['Cancelled', ['Cancelled']]];
+        var tab = 'All', lastSig = '';
+        var SAY = {
+            Pending: 'We received your order and will start baking soon.',
+            Preparing: 'Your cookies are being baked and packed.',
+            'Ready:Delivery': 'Your order is out for delivery.',
+            'Ready:Pick Up': 'Your order is ready. Please pick it up at the shop.',
+            'Completed:Delivery': 'Your package has been delivered.',
+            'Completed:Pick Up': 'You picked up your order. Enjoy your cookies!',
+            Cancelled: 'This order was cancelled.'
+        };
+        var mine = function () {
+            var me = SH.norm(SH.user().name);
+            return S.get('sh_orders', []).filter(function (o) { return !o.sample && SH.norm(o.name) === me; })
+                .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+        };
+        var picOf = function (i) { var p = SH.find(i.name); return i.img || (p && p.img) || 'assets/Logo.png'; };
+        var orderCard = function (o) {
+            var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled';
+            var head = gone ? 'Order cancelled' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
+            var say = SAY[o.status === 'Ready' || o.status === 'Completed' ? o.status + ':' + o.mode : o.status] || '';
+            var track = gone ? '' : '<div class="track"><span class="track_fill" data-w="calc(75% * ' + (done ? 3 : idx) + ' / 3)"></span>' + steps.map(function (s, i) {
+                var d = done || i < idx, n = !done && i === idx;
+                return '<div class="step' + (d ? ' done' : n ? ' now' : '') + '"><i>' + (d ? '\u2713' : (i + 1)) + '</i><span>' + s + '</span></div>';
+            }).join('') + '</div>';
+            var eta = (!gone && !done && o.readyAt) ? '<div class="oc_eta"><div><span>' + (o.mode === 'Delivery' ? 'Estimated ready' : 'Ready for pick up by') + '</span><b>' + when(o.readyAt) + '</b></div>' +
+                (o.arriveAt ? '<div><span>Estimated arrival</span><b>' + when(o.arriveAt) + '</b></div>' : '') + '</div>' : '';
+            var lines = o.items.map(function (i) {
+                return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt=""><div class="oc_name"><b>' + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
+            }).join('');
+            return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(o.id) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
+                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + track + eta + lines +
+                '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
+                '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button></div></div></div>';
+        };
+        var drawOrders = function (force) {
+            var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status]; }));
+            if (!force && sig === lastSig) return;
+            lastSig = sig;
+            var want = (TABS.filter(function (x) { return x[0] === tab; })[0] || [])[1];
+            var list = want ? all.filter(function (o) { return want.indexOf(o.status) > -1; }) : all;
+            var bar = '<div class="oc_tabs">' + TABS.map(function (x) {
+                var n = x[1] ? all.filter(function (o) { return x[1].indexOf(o.status) > -1; }).length : all.length;
+                return '<button type="button" class="' + (x[0] === tab ? 'on' : '') + '" data-tab="' + x[0] + '">' + x[0] + (n ? ' <em>' + n + '</em>' : '') + '</button>';
+            }).join('') + '</div>';
+            var body;
+            if (!all.length) body = '<p class="empty">You have no orders yet.</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>';
+            else if (!list.length) body = '<p class="empty">No orders in "' + tab + '".</p>';
+            else body = list.map(orderCard).join('');
+            mo.innerHTML = '<h1>My Orders</h1>' + bar + body;
+            requestAnimationFrame(function () { requestAnimationFrame(function () { $$('.track_fill', mo).forEach(function (f) { f.style.width = f.getAttribute('data-w'); }); }); });
+        };
+        mo.addEventListener('click', function (e) {
+            var tb = e.target.closest('[data-tab]'), rc = e.target.closest('.oc_rc'), ag = e.target.closest('.oc_again');
+            if (tb) { tab = tb.getAttribute('data-tab'); drawOrders(true); return; }
+            if (rc) { S.set('sh_last', rc.getAttribute('data-rc')); location.href = 'receipt.html'; return; }
+            if (ag) {
+                var o = S.get('sh_orders', []).filter(function (x) { return x.id === ag.getAttribute('data-again'); })[0]; if (!o) return;
+                var c = SH.cart(), added = 0;
+                o.items.forEach(function (i) {
+                    var p = SH.find(i.name); if (!p) return;
+                    var hit = c.filter(function (x) { return SH.norm(x.name) === SH.norm(i.name); })[0];
+                    if (hit) hit.qty += i.qty; else c.push({ name: i.name, price: p.p, img: picOf(i), qty: i.qty });
+                    added++;
+                });
+                if (!added) { SH.toast('Those products are not available right now.'); return; }
+                SH.saveCart(c); SH.toast('\u2713 Your items are back in the cart.', { href: 'cart.html', text: 'View Cart' });
+            }
+        });
+        window.addEventListener('storage', function () { drawOrders(); });
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) drawOrders(); });
+        setInterval(drawOrders, 5000);
+        drawOrders(true);
     }
 
     /* ---------- RECEIPT ---------- */
@@ -242,7 +392,7 @@
         rc.innerHTML = '<div class="receipt_box"><div class="receipt_head"><h3>Customer Info</h3><b>Order #' + esc(o.id) + '</b></div>' +
             '<div class="receipt_in">' + esc(o.name) + '</div><h3>' + (o.mode === 'Delivery' ? 'Address Delivery' : 'Pick Up') + '</h3><div class="receipt_in">' + esc(o.addr) + '</div>' +
             '<hr><h3>Order Summary</h3>' + o.items.map(function (i) { return '<div class="receipt_line"><span>' + i.qty + 'x ' + esc(i.name) + '</span><b>' + fmt(i.qty * i.price) + '</b></div>'; }).join('') +
-            '<div class="receipt_line" style="font-size:16px;color:inherit"><span>Payment: ' + esc(o.pay) + '</span></div><hr>' +
+            '<div class="receipt_line" style="font-size:16px;color:inherit"><span>Payment: ' + esc(o.pay) + '</span></div>' + etaReceipt(o) + '<hr>' +
             '<div class="receipt_line"><span>Subtotal</span><b>' + fmt(o.sub) + '</b></div><div class="receipt_line"><span>Delivery Fee</span><b>' + fmt(o.fee) + '</b></div>' +
             '<div class="receipt_line tot"><span>TOTAL</span><b>' + fmt(o.total) + '</b></div></div>';
     }
