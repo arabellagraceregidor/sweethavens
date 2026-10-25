@@ -19,9 +19,9 @@
 
     /* products, prices and starting stock (prices come from the design PDF) */
     var CATALOG = [
-        { n: 'Matcha Melties', p: 40, s: 30 }, { n: 'Biscoff Choco Crunch', p: 55, s: 30 },
-        { n: 'Oatie Choco Paws', p: 35, s: 30 }, { n: 'Choco Crinkles', p: 30, s: 30 },
-        { n: 'Chocolate Chip', p: 35, s: 40 }, { n: 'Red Velvet Cloud Bites', p: 40, s: 40 }
+        { n: 'Matcha Melties', p: 40, s: 30, img: 'assets/MATCHA.png' }, { n: 'Biscoff Choco Crunch', p: 55, s: 30, img: 'assets/BISCOFF.png' },
+        { n: 'Oatie Choco Paws', p: 35, s: 30, img: 'assets/OATMEAL.png' }, { n: 'Choco Crinkles', p: 30, s: 30, img: 'assets/CRINKLES.png' },
+        { n: 'Chocolate Chip', p: 35, s: 40, img: 'assets/CHOCOLATECHIP.png' }, { n: 'Red Velvet Cloud Bites', p: 40, s: 40, img: 'assets/REDVELVET.png' }
     ];
     var BASE = CATALOG.slice();
     var customList = function () { return S.get('sh_products', []); };
@@ -31,11 +31,47 @@
         var ed = edits();
         var base = BASE.filter(function (c) { return !(ed[c.n] && ed[c.n].deleted); }).map(function (c) {
             var e = ed[c.n] || {};
-            return { n: c.n, p: e.p != null ? e.p : c.p, s: c.s, img: e.img, d: e.d, base: true };
+            return { n: c.n, p: e.p != null ? e.p : c.p, s: c.s, img: e.img || c.img, d: e.d, base: true };
         });
         return base.concat(customList().map(function (p) { return { n: p.n, p: p.p, s: p.s, custom: true, id: p.id, img: p.img, d: p.d, t: p.t }; }));
     };
     var find = function (n) { return catalog().filter(function (c) { return norm(c.n) === norm(n); })[0]; };
+    var TAG_PREFIX = { 'matcha melties': 'MM', 'biscoff choco crunch': 'BCC', 'oatie choco paws': 'OCP', 'choco crinkles': 'CR', 'chocolate chip': 'CC', 'red velvet cloud bites': 'RVCB' };
+    function tagPrefix(name) {
+        var key = norm(name); if (TAG_PREFIX[key]) return TAG_PREFIX[key];
+        var initials = String(name).trim().split(/\s+/).map(function (part) { return part.charAt(0); }).join('').toUpperCase();
+        return initials || 'PR';
+    }
+    function ensureOrderTags() {
+        var orders = S.get('sh_orders', []);
+        if (S.get('sh_product_order_tags_v1', false)) return orders;
+        var counts = {}, sequence = orders.filter(function (o) { return !o.sample; }).sort(function (a, b) { return new Date(a.date || 0) - new Date(b.date || 0); });
+        sequence.forEach(function (o) {
+            var seen = {};
+            (o.items || []).forEach(function (item) {
+                var key = norm(item.name);
+                if (seen[key]) { if (!item.tag) item.tag = seen[key]; return; }
+                counts[key] = (counts[key] || 0) + 1;
+                if (!item.tag) item.tag = tagPrefix(item.name) + counts[key];
+                seen[key] = item.tag;
+            });
+        });
+        S.set('sh_orders', orders); S.set('sh_product_order_tags_v1', true);
+        return orders;
+    }
+    function nextOrderTag(name) {
+        var orders = ensureOrderTags(), key = norm(name), count = 0;
+        orders.forEach(function (o) { if (!o.sample && (o.items || []).some(function (item) { return norm(item.name) === key; })) count++; });
+        return tagPrefix(name) + (count + 1);
+    }
+    function orderTagLabel(order) {
+        var tags = [];
+        (order && order.items || []).forEach(function (item) {
+            if (item.tag && tags.indexOf(item.tag) < 0) tags.push(item.tag);
+        });
+        return tags.length ? tags.join(', ') : String(order && order.id || '');
+    }
+    ensureOrderTags();
     var user = function () { return S.get('sh_user', null); };
     var cart = function () { return S.get('sh_cart', []); };
     var saveCart = function (c) { S.set('sh_cart', c); };
@@ -44,6 +80,7 @@
         catalog().forEach(function (c) { if (st[c.n] == null) st[c.n] = c.s; });
         return st;
     }
+    function stockCount(name) { var st = stock(); return Math.max(0, Number(st[name]) || 0); }
     var saveStock = function (st) { S.set('sh_stock', st); };
 
     function toast(m, link) {
@@ -125,7 +162,7 @@
     function logout() { S.set('sh_user', null); S.set('sh_cart', []); location.href = 'login.html'; }
 
     window.SH = { cartToast: cartToast, loginModal: loginModal, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
-        saveCart: saveCart, stock: stock, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout };
+        saveCart: saveCart, stock: stock, stockCount: stockCount, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout, ensureOrderTags: ensureOrderTags, nextOrderTag: nextOrderTag, orderTagLabel: orderTagLabel };
 
     /* ---- light / dark mode button ---- */
     var theme = 'light';
@@ -139,6 +176,8 @@
 
     /* ---- header: admin-only links, log out, current page ---- */
     var u = user();
+    var currentPage = location.pathname.split('/').pop();
+    if (u && u.role === 'admin' && (currentPage === 'my_orders.html' || currentPage === 'account.html')) location.replace('dashboard.html');
     var nav = $('#admin_nav_buttons') || $('#nav_buttons');
     /* Admin viewing the shop menu: keep admin nav (no About Us / Nearest Shop / Cart) */
     if (u && u.role === 'admin' && $('#nav_buttons') && !$('#admin_nav_buttons')) {
@@ -167,13 +206,17 @@
             d.innerHTML = '<a class="nav1"' + (id ? ' id="' + id + '"' : '') + ' href="' + href + '">' + text + '</a>';
             nav.insertBefore(d, last);
         };
+        if (u && u.role !== 'admin') {
+            add('my_orders.html', 'My Orders');
+        }
         if (u) {
-            if (u.role !== 'admin') add('my_orders.html', 'My Orders');
-            add('account.html', 'My Account');
             add('#', 'Log Out', 'logout_link');
             $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
             var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
-            if (pic && pic.parentNode && pic.parentNode.tagName === 'A') pic.parentNode.href = 'account.html';
+            if (pic && pic.parentNode && pic.parentNode.tagName === 'A') {
+                pic.parentNode.href = '#profile';
+                pic.parentNode.addEventListener('click', function (e) { e.preventDefault(); openProfile(); });
+            }
         }
         /* Menu always opens the product menu; admin nav stays when viewing it */
         $$('a.nav1', nav).forEach(function (a) {
@@ -209,6 +252,51 @@
     }
     try { var fl = sessionStorage.getItem('sh_flash'); if (fl) { sessionStorage.removeItem('sh_flash'); toast(fl); } } catch (e) {}
 
+    function openProfile() {
+        var active = user(); if (!active) { location.href = 'login.html'; return; }
+        var isAdmin = active.role === 'admin';
+        var profile = isAdmin ? S.get('sh_admin_profile', {}) : (S.get('sh_users', []).filter(function (x) { return norm(x.name) === norm(active.name); })[0] || {});
+        var fields = [
+            ['name', 'Name'], ['age', 'Age'], ['sex', 'Sex'], ['email', 'Gmail'], ['contact', 'Contact Number'],
+            ['address', 'House/Unit No. and Street'], ['region', 'Region'], ['city', 'City/Municipality'],
+            ['brgy', 'Barangay'], ['zip', 'ZIP Code'], ['landmark', 'Landmark/Delivery Notes']
+        ];
+        var fieldHtml = fields.map(function (f) {
+            var value = profile[f[0]] == null ? (f[0] === 'name' ? active.name : '') : profile[f[0]];
+            return '<label style="display:block;text-align:left;margin:10px 0"><span style="display:block;font-weight:700;margin-bottom:4px">' + f[1] + '</span>' +
+                '<input data-profile="' + f[0] + '" value="' + esc(value) + '" readonly style="width:100%;box-sizing:border-box;padding:10px;border:2px solid var(--bord);border-radius:10px;background:var(--field);color:var(--ink)"></label>';
+        }).join('');
+        var modalBox = $('#modal');
+        if (!modalBox) { modalBox = document.createElement('div'); modalBox.id = 'modal'; modalBox.innerHTML = '<div class="mbox" id="mbox"></div>'; document.body.appendChild(modalBox); }
+        modalBox.innerHTML = '<div class="mbox" id="mbox"><h3>My Information</h3><form id="profile_form" style="text-align:left">' + fieldHtml +
+            '<p id="profile_msg" style="min-height:1.2em"></p><div class="oc_btns" style="justify-content:center"><button class="btn_dark" type="button" id="profile_edit">Edit</button>' +
+            '<button class="btn_dark" type="submit" id="profile_save" disabled>Save</button><button class="btn_dark" type="button" data-close>Close</button></div></form></div>';
+        modalBox.classList.add('on');
+        modalBox.onclick = function (e) { if (e.target === modalBox || e.target.hasAttribute('data-close')) modalBox.classList.remove('on'); };
+        var form = $('#profile_form', modalBox), edit = $('#profile_edit', modalBox), save = $('#profile_save', modalBox);
+        edit.onclick = function () { $$('[data-profile]', form).forEach(function (input) { input.removeAttribute('readonly'); }); save.disabled = false; edit.disabled = true; };
+        form.onsubmit = function (e) {
+            e.preventDefault();
+            var changes = {};
+            $$('[data-profile]', form).forEach(function (input) { changes[input.getAttribute('data-profile')] = input.value.trim(); });
+            if (!changes.name) { $('#profile_msg', form).textContent = 'Name is required.'; return; }
+            if (isAdmin) {
+                var adminProfile = S.get('sh_admin_profile', {}); Object.keys(changes).forEach(function (key) { adminProfile[key] = changes[key]; });
+                S.set('sh_admin_profile', adminProfile);
+            } else {
+                var users = S.get('sh_users', []), oldName = active.name, found = false;
+                users.forEach(function (entry) { if (norm(entry.name) === norm(oldName)) { Object.keys(changes).forEach(function (key) { entry[key] = changes[key]; }); found = true; } });
+                if (!found) { $('#profile_msg', form).textContent = 'Saved account was not found. Please log in again.'; return; }
+                S.set('sh_users', users);
+                var orders = S.get('sh_orders', []); orders.forEach(function (order) { if (norm(order.name) === norm(oldName)) order.name = changes.name; }); S.set('sh_orders', orders);
+                var oldKey = 'sh_wish_' + norm(oldName), newKey = 'sh_wish_' + norm(changes.name), oldWish = S.get(oldKey, null);
+                if (oldWish) { S.set(newKey, oldWish); try { localStorage.removeItem(oldKey); } catch (x) {} }
+            }
+            active.name = changes.name; S.set('sh_user', active);
+            toast('Account information saved.'); modalBox.classList.remove('on');
+        };
+    }
+
     /* ---- home page: show products the admin added (after list.js made the others) ---- */
     function injectCustom() {
         var box = $('#classics'); if (!box) return;
@@ -226,6 +314,26 @@
     }
     function onReady(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
     onReady(injectCustom);
+    onReady(function () {
+        syncProductStock();
+    });
+
+    function syncProductStock() {
+        $$('.product-card').forEach(function (card) {
+            var title = $('.card-header', card); if (!title) return;
+            var count = stockCount(title.textContent.trim()), badge = $('.card-notif', card);
+            if (badge) {
+                if (!badge.hasAttribute('data-stock-label')) badge.setAttribute('data-stock-label', badge.textContent);
+                badge.textContent = count <= 0 ? 'Out of Stock' : badge.getAttribute('data-stock-label');
+            }
+            $$('.cart-btn, .order-btn', card).forEach(function (button) {
+                button.disabled = count <= 0 || (u && u.role === 'admin');
+                if (u && u.role === 'admin') button.hidden = true;
+            });
+        });
+    }
+    window.addEventListener('storage', syncProductStock);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) syncProductStock(); });
 
     /* ---- wishlist heart at the top-right of every product ---- */
     function initWish() {
@@ -281,6 +389,9 @@
     function addItem(card) {
         var name = $('.card-header', card).textContent.trim(), p = find(name) || { p: 0 };
         var c = cart(), f = c.filter(function (i) { return norm(i.name) === norm(name); })[0];
+        var available = stockCount(name);
+        if (available <= 0) { toast(name + ' is out of stock.'); syncProductStock(); return null; }
+        if (f && f.qty >= available) { toast('Only ' + available + ' ' + name + ' available.'); return null; }
         if (f) f.qty++; else c.push({ name: name, price: p.p, img: $('.product-img', card).getAttribute('src'), qty: 1 });
         saveCart(c); return name;
     }
@@ -288,6 +399,9 @@
         var card = e.target.closest ? e.target.closest('.product-card') : null;
         if (!card) return;
         var info = e.target.closest('.info-btn'), add = e.target.closest('.cart-btn'), ord = e.target.closest('.order-btn');
+        if (u && u.role === 'admin' && (add || ord)) {
+            e.preventDefault(); toast('Admin accounts cannot place orders.'); return;
+        }
         if (info) {
             var nm = $('.card-header', card).textContent.trim();
             location.href = 'product.html?product=' + encodeURIComponent(nm);
@@ -296,6 +410,7 @@
             e.preventDefault();
             if (needLogin()) return;
             var added = addItem(card);
+            if (!added) return;
             if (ord) { location.href = 'cart.html'; }
             else cartToast(added);
         }

@@ -2,6 +2,17 @@
 (function () {
     var SH = window.SH, S = SH.S, $ = SH.$, $$ = SH.$$, fmt = SH.fmt, esc = SH.esc;
     if (SH.needLogin()) return;
+    function stockProblem(items) {
+        return (items || []).filter(function (item) { return SH.stockCount(item.name) < item.qty; });
+    }
+    var currentUser = SH.user();
+    if (currentUser && currentUser.role === 'admin') {
+        if ($('.cart_cont') || $('.delivery-container') || $('#my_orders')) {
+            SH.toast($('#my_orders') ? 'My Orders is only available to customer accounts.' : 'Admin accounts cannot place orders.');
+            location.replace('dashboard.html');
+            return;
+        }
+    }
     var FEE = 50;
 
     /* ---------- estimated ready + arrival time ---------- */
@@ -49,9 +60,10 @@
             if (!l.length) rows = '<p class="empty" style="margin:10px 0">No products in your wishlist yet. Tap the heart on a product to save it.</p>';
             else rows = l.map(function (w, i) {
                 var p = SH.find(w.name);
+                var available = p ? SH.stockCount(w.name) : 0;
                 return '<div class="wish_row"><div class="cart_img-cont"><img class="cart_img" src="' + esc(w.img || (p && p.img) || 'assets/Logo.png') + '" alt=""></div>' +
-                    '<div class="cart_info-cont"><p class="cart_name">' + esc(w.name) + '</p><p class="cart_price">' + (p ? fmt(p.p) : 'Not available right now') + '</p></div>' +
-                    '<div class="wish_actions">' + (p ? '<button type="button" class="wish_add" data-i="' + i + '">Add to cart</button>' : '') +
+                    '<div class="cart_info-cont"><p class="cart_name">' + esc(w.name) + '</p><p class="cart_price">' + (p ? fmt(p.p) : 'Not available right now') + '</p>' + (available <= 0 ? '<b>Out of Stock</b>' : '') + '</div>' +
+                    '<div class="wish_actions">' + (p ? '<button type="button" class="wish_add" data-i="' + i + '"' + (available <= 0 ? ' disabled' : '') + '>' + (available <= 0 ? 'Out of Stock' : 'Add to cart') + '</button>' : '') +
                     '<button type="button" class="wish_rm on" data-i="' + i + '" title="Remove from wishlist" aria-label="Remove ' + esc(w.name) + ' from wishlist">' + SH.HEART + '</button></div></div>';
             }).join('');
             return '<div class="wish_panel" id="wish_panel"' + (wishOpen ? '' : ' hidden') + '><h2>My Wishlist</h2>' + rows + '</div>';
@@ -65,22 +77,32 @@
             var c = SH.cart();
             if (!c.length) { wrap.innerHTML = wishHead() + '<p class="empty">Your cart is empty. Add a cookie from the Menu!</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>'; return; }
             var sub = 0;
+            var unavailable = stockProblem(c);
             wrap.innerHTML = wishHead() + c.map(function (it, i) {
                 sub += it.price * it.qty;
+                var available = SH.stockCount(it.name), status = available <= 0 ? 'Out of Stock' : it.qty > available ? 'Only ' + available + ' available' : '';
                 return '<div class="cart_card"><div class="cart_img-cont"><img src="' + esc(it.img) + '" class="cart_img"></div>' +
-                    '<div class="cart_info-cont"><p class="cart_name">' + esc(it.name) + '</p><p class="cart_price">' + fmt(it.price) + '</p></div>' +
+                    '<div class="cart_info-cont"><p class="cart_name">' + esc(it.name) + '</p><p class="cart_price">' + fmt(it.price) + '</p>' + (status ? '<b>' + status + '</b>' : '') + '</div>' +
                     '<div class="cart_quantity-cont"><button class="cart_minus" data-i="' + i + '">-</button><p class="cart_quantity">' + it.qty +
-                    '</p><button class="cart_plus" data-i="' + i + '">+</button></div></div>';
+                    '</p><button class="cart_plus" data-i="' + i + '"' + (it.qty >= available ? ' disabled' : '') + '>+</button></div></div>';
             }).join('') + '<div class="cart_total"><span>Subtotal</span><b>' + fmt(sub) + '</b></div>' +
-                '<button type="submit" class="cart_checkout"><a href="delivery.html">Proceed to Checkout</a></button>';
+                '<button type="button" class="cart_checkout" data-delivery' + (unavailable.length ? ' disabled aria-disabled="true"' : '') + '>Proceed to Checkout</button>';
         };
         wrap.addEventListener('click', function (e) {
             var wt = e.target.closest('.wish_toggle'), wa = e.target.closest('.wish_add'), wr = e.target.closest('.wish_rm');
+            var checkout = e.target.closest('[data-delivery]');
+            if (checkout) {
+                var checkoutCart = SH.cart(), blocked = stockProblem(checkoutCart);
+                if (blocked.length) { SH.toast('Remove unavailable or excess products before checkout.'); return; }
+                location.href = 'delivery.html'; return;
+            }
             if (wt) { wishOpen = !wishOpen; drawCart(); return; }
             if (wa || wr) {
                 var wl = SH.wishList(), w = wl[+(wa || wr).getAttribute('data-i')]; if (!w) return;
                 if (wa) {
-                    var p = SH.find(w.name), cc = SH.cart(), hit = cc.filter(function (x) { return SH.norm(x.name) === SH.norm(w.name); })[0];
+                    var p = SH.find(w.name), cc = SH.cart(), hit = cc.filter(function (x) { return SH.norm(x.name) === SH.norm(w.name); })[0], available = SH.stockCount(w.name);
+                    if (available <= 0) { SH.toast(w.name + ' is out of stock.'); drawCart(); return; }
+                    if (hit && hit.qty >= available) { SH.toast('Only ' + available + ' ' + w.name + ' available.'); return; }
                     if (hit) hit.qty++; else cc.push({ name: w.name, price: p ? p.p : 0, img: w.img || (p && p.img) || 'assets/Logo.png', qty: 1 });
                     SH.saveCart(cc); SH.cartToast(w.name);
                 } else { SH.toggleWish(w.name); SH.toast(w.name + ' was removed from your wishlist.'); }
@@ -88,11 +110,14 @@
             }
             var b = e.target.closest('.cart_minus, .cart_plus'); if (!b) return;
             var c = SH.cart(), i = +b.getAttribute('data-i');
+            if (b.classList.contains('cart_plus') && c[i].qty >= SH.stockCount(c[i].name)) { SH.toast(c[i].name + ' is out of stock.'); return; }
             c[i].qty += b.classList.contains('cart_plus') ? 1 : -1;
             if (c[i].qty < 1) c.splice(i, 1);
             SH.saveCart(c); drawCart();
         });
         drawCart();
+        window.addEventListener('storage', drawCart);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) drawCart(); });
     }
 
     /* ---------- DELIVERY ---------- */
@@ -248,6 +273,7 @@
             if (place.classList.contains('paying')) return;
             var c = SH.cart(), badOnes = [];
             if (!c.length) { SH.toast('Your cart is empty.'); return; }
+            if (stockProblem(c).length) { SH.toast('An item is out of stock or exceeds available stock. Return to your cart to update it.'); return; }
             if (mode === 'Delivery' && !addr.value.trim()) badOnes.push(addr);
             if (!method.value) {
                 if (payWrap) {
@@ -262,14 +288,16 @@
                 badOnes[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); badOnes[0].focus({ preventScroll: true }); return;
             }
             var finish = function () {
+                if (stockProblem(c).length) { place.classList.remove('paying'); SH.toast('Stock changed before your order could be placed. Return to your cart and update it.'); return; }
                 var t = totals(), L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', id = '';
                 for (var k = 0; k < 7; k++) id += L[Math.floor(Math.random() * 26)];
                 var st = SH.stock();
                 c.forEach(function (i) { st[i.name] = Math.max(0, (st[i.name] == null ? 0 : st[i.name]) - i.qty); });
                 SH.saveStock(st);
+                SH.ensureOrderTags();
                 var orders = S.get('sh_orders', []);
                 orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value, paid: method.value !== 'cash', riderLocation: '',
-                    items: c.map(function (i) { return { name: i.name, qty: i.qty, price: i.price, img: i.img }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString(),
+                    items: c.map(function (i) { return { name: i.name, tag: SH.nextOrderTag(i.name), qty: i.qty, price: i.price, img: i.img }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString(),
                     readyAt: etaFor(c, mode).ready.toISOString(), arriveAt: etaFor(c, mode).arrive ? etaFor(c, mode).arrive.toISOString() : null });
                 S.set('sh_orders', orders); S.set('sh_last', id); SH.saveCart([]);
                 showOrderOverlay();
@@ -308,7 +336,7 @@
     var mo = $('#my_orders');
     if (mo) {
         var STEPS = { 'Delivery': ['Order placed', 'Preparing', 'Out for delivery', 'Delivered'], 'Pick Up': ['Order placed', 'Preparing', 'Ready for pick up', 'Picked up'] };
-        var IDX = { Pending: 0, Preparing: 1, Ready: 2, Completed: 3 };
+        var IDX = { Pending: 0, Preparing: 1, Ready: 2, 'Pick Up': 2, Completed: 3 };
         var TABS = ['All', 'To Pay', 'To Ship', 'To Receive', 'To Review', 'Return'];
         var tab = 'All', lastSig = '';
         var SAY = {
@@ -316,6 +344,7 @@
             Preparing: 'Your cookies are being baked and packed.',
             'Ready:Delivery': 'Your order is out for delivery.',
             'Ready:Pick Up': 'Your order is ready. Please pick it up at the shop.',
+            'Pick Up': 'Your order has been picked up by the rider.',
             'Completed:Delivery': 'Your package has been delivered.',
             'Completed:Pick Up': 'You picked up your order. Enjoy your cookies!',
             Cancelled: 'This order was cancelled.'
@@ -331,7 +360,7 @@
         var isPaid = function (o) { return o.paid === true || (o.paid == null && !/cash|cod/i.test(o.pay || '')); };
         var orderCard = function (o) {
             var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled', returned = o.status === 'Returned';
-            var head = gone ? 'Order cancelled' : returned ? 'Returned' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
+            var head = gone ? 'Order cancelled' : returned ? 'Returned' : o.status === 'Pick Up' ? 'Picked up by rider' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
             var say = SAY[o.status === 'Ready' || o.status === 'Completed' ? o.status + ':' + o.mode : o.status] || '';
             if (returned) say = 'This order was successfully returned.';
             var track = gone || returned ? '' : '<div class="track"><span class="track_fill" data-w="calc(75% * ' + (done ? 3 : idx) + ' / 3)"></span>' + steps.map(function (s, i) {
@@ -341,13 +370,14 @@
             var eta = (!gone && !done && o.readyAt) ? '<div class="oc_eta"><div><span>' + (o.mode === 'Delivery' ? 'Estimated ready' : 'Ready for pick up by') + '</span><b>' + when(o.readyAt) + '</b></div>' +
                 (o.arriveAt ? '<div><span>Estimated arrival</span><b>' + when(o.arriveAt) + '</b></div>' : '') + '</div>' : '';
             var lines = o.items.map(function (i) {
-                return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt=""><div class="oc_name"><b>' + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
+                return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
             }).join('');
-            var rider = o.mode === 'Delivery' && o.status === 'Ready' ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
-            return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(o.id) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
+            var rider = o.mode === 'Delivery' && (o.status === 'Ready' || o.status === 'Pick Up') ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
+            var cancel = o.status === 'Pending' ? '<button type="button" class="oc_cancel" data-cancel="' + esc(o.id) + '">Cancel Order</button>' : '';
+            return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(SH.orderTagLabel(o)) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
                 '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + track + eta + rider + lines +
                 '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
-                '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button></div></div></div>';
+                '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' + cancel + '</div></div></div>';
         };
         var reviewCards = function (all) {
             var rows = [];
@@ -355,8 +385,8 @@
                 if (o.status === 'Cancelled' || o.status === 'Returned') return;
                 (o.items || []).forEach(function (i, index) {
                     if (reviewed(o, index)) return;
-                    rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(o.id) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
-                        '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt=""><div class="oc_name"><b>' + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
+                    rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(i.tag || SH.orderTagLabel(o)) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
+                        '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
                         '<div class="oc_btns" style="align-items:center"><span>Quick review:</span><span class="quick_rating" data-order="' + esc(o.id) + '" data-item="' + index + '" style="display:flex;gap:4px"></span>' +
                         '<button type="button" data-quick-submit="' + esc(o.id) + '" data-item="' + index + '">Submit</button><button type="button" data-refund="' + esc(o.id) + '" data-item="' + index + '">Request Refund</button>' +
                         '<button type="button" class="oc_again" data-write-review="' + esc(o.id) + '" data-item="' + index + '" data-product="' + esc(i.name) + '">Write a Review</button></div></div>');
@@ -371,7 +401,7 @@
             var list = all.filter(function (o) {
                 if (tab === 'To Pay') return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned';
                 if (tab === 'To Ship') return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up');
-                if (tab === 'To Receive') return o.status === 'Ready' && o.mode === 'Delivery';
+                if (tab === 'To Receive') return (o.status === 'Ready' || o.status === 'Pick Up') && o.mode === 'Delivery';
                 if (tab === 'Return') return o.status === 'Returned';
                 return true;
             });
@@ -379,7 +409,7 @@
                 'All': all.length,
                 'To Pay': all.filter(function (o) { return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned'; }).length,
                 'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up'); }).length,
-                'To Receive': all.filter(function (o) { return o.status === 'Ready' && o.mode === 'Delivery'; }).length,
+                'To Receive': all.filter(function (o) { return (o.status === 'Ready' || o.status === 'Pick Up') && o.mode === 'Delivery'; }).length,
                 'To Review': all.filter(function (o) { return o.status !== 'Cancelled' && o.status !== 'Returned'; }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
                 'Return': all.filter(function (o) { return o.status === 'Returned'; }).length
             };
@@ -402,6 +432,16 @@
             var tb = e.target.closest('[data-tab]'), rc = e.target.closest('.oc_rc'), ag = e.target.closest('[data-again]');
             if (tb) { tab = tb.getAttribute('data-tab'); drawOrders(true); return; }
             if (rc) { S.set('sh_last', rc.getAttribute('data-rc')); location.href = 'receipt.html'; return; }
+            var cancel = e.target.closest('[data-cancel]');
+            if (cancel) {
+                var cancelList = S.get('sh_orders', []), target = cancelList.filter(function (o) { return String(o.id) === cancel.getAttribute('data-cancel') && SH.norm(o.name) === SH.norm(SH.user().name); })[0];
+                if (!target || target.sample || target.status !== 'Pending') { SH.toast('This order can no longer be cancelled.'); drawOrders(true); return; }
+                if (!confirm('Cancel this order?')) return;
+                var cancelStock = SH.stock();
+                target.items.forEach(function (item) { cancelStock[item.name] = (cancelStock[item.name] || 0) + item.qty; });
+                target.status = 'Cancelled'; S.set('sh_orders', cancelList); SH.saveStock(cancelStock);
+                SH.toast('Order #' + SH.orderTagLabel(target) + ' was cancelled.'); drawOrders(true); return;
+            }
             var star = e.target.closest('.quick_rating [data-value]');
             if (star) {
                 var host = star.parentNode, value = +star.getAttribute('data-value'); host.setAttribute('data-rating', value);
@@ -444,11 +484,12 @@
     if (rc) {
         var o = S.get('sh_orders', []).filter(function (x) { return x.id === S.get('sh_last', ''); })[0];
         if (!o) { rc.innerHTML = '<p class="empty">No order yet. Check out a cart first!</p>'; return; }
-        rc.innerHTML = '<div class="receipt_box"><div class="receipt_head"><h3>Customer Info</h3><b>Order #' + esc(o.id) + '</b></div>' +
-            '<div class="receipt_in">' + esc(o.name) + '</div><h3>' + (o.mode === 'Delivery' ? 'Address Delivery' : 'Pick Up') + '</h3><div class="receipt_in">' + esc(o.addr) + '</div>' +
-            '<hr><h3>Order Summary</h3>' + o.items.map(function (i) { return '<div class="receipt_line"><span>' + i.qty + 'x ' + esc(i.name) + '</span><b>' + fmt(i.qty * i.price) + '</b></div>'; }).join('') +
-            '<div class="receipt_line" style="font-size:16px;color:inherit"><span>Payment: ' + esc(o.pay) + '</span></div>' + etaReceipt(o) + '<hr>' +
+        rc.innerHTML = '<div class="receipt_box thermal-paper"><div class="receipt_brand">SweetHavens</div><p class="receipt_caption">Order Receipt</p>' +
+            '<div class="receipt_head"><h3>Customer Info</h3><b>Order #' + esc(SH.orderTagLabel(o)) + '</b></div>' +
+            '<div class="receipt_in">' + esc(o.name) + '</div><h3>' + (o.mode === 'Delivery' ? 'Delivery Address' : 'Pick Up') + '</h3><div class="receipt_in">' + esc(o.addr) + '</div>' +
+            '<hr><h3>Order Summary</h3>' + o.items.map(function (i) { return '<div class="receipt_line"><span>' + (i.tag ? '<b>' + esc(i.tag) + '</b> ' : '') + i.qty + 'x ' + esc(i.name) + '</span><b>' + fmt(i.qty * i.price) + '</b></div>'; }).join('') +
+            '<div class="receipt_line"><span>Payment: ' + esc(o.pay) + '</span></div>' + etaReceipt(o) + '<hr>' +
             '<div class="receipt_line"><span>Subtotal</span><b>' + fmt(o.sub) + '</b></div><div class="receipt_line"><span>Delivery Fee</span><b>' + fmt(o.fee) + '</b></div>' +
-            '<div class="receipt_line tot"><span>TOTAL</span><b>' + fmt(o.total) + '</b></div></div>';
+            '<div class="receipt_line tot"><span>TOTAL</span><b>' + fmt(o.total) + '</b></div><p class="receipt_thanks">Thank you for ordering!</p></div>';
     }
 })();
