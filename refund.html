@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SweetHavens - Request Refund</title>
+        <link rel="stylesheet" href="home.css">
+    </head>
+    <body>
+        <header>
+            <div id="h_title-cont">
+                <img src="assets/Logo.png" id="logo">
+                <div><p><a id="h_title" href="home_page.html">SweetHavens</a></p></div>
+            </div>
+            <div id="nav_buttons">
+                <div><nav><a class="nav1" href="map.html">Nearest Shop</a></nav></div>
+                <div><a class="nav1" href="about.html">About Us</a></div>
+                <div><a class="nav1" href="cart.html">Cart</a></div>
+                <div><a class="nav1" href="home_page.html#weekly">Menu</a></div>
+                <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
+            </div>
+        </header>
+        <main class="orders_cont">
+        <div class="form_cont">
+            <p class="form_header">Request a Refund</p>
+            <form id="refund_form">
+                <p id="refund_item"></p>
+                <label for="refund_reason">Reason</label>
+                <select id="refund_reason" name="reason" required style="width:100%;box-sizing:border-box;border:2px solid var(--bord);background:var(--field);color:var(--ink);border-radius:12px;padding:16px;font:inherit">
+                    <option value="">Choose a reason</option>
+                    <option>Damaged product</option>
+                    <option>Wrong product received</option>
+                    <option>Missing product</option>
+                    <option>Product quality issue</option>
+                    <option>Other</option>
+                    <option>Write my own reason</option>
+                </select>
+                <label for="refund_details">Extra details or your reason</label>
+                <textarea id="refund_details" name="details" rows="4" style="width:100%;box-sizing:border-box;border:2px solid var(--bord);background:var(--field);color:var(--ink);border-radius:12px;padding:16px;font:inherit"></textarea>
+                <label for="refund_evidence">Add a picture or video (required)</label>
+                <input id="refund_evidence" name="evidence" type="file" accept="image/*,video/*" required multiple>
+                <p class="form_msg" id="refund_msg"></p>
+                <button class="btn_dark" type="submit">Submit Refund Request</button>
+            </form>
+        </div>
+        </main>
+        <script src="site.js"></script>
+        <script src="customer.js"></script>
+    </body>
+</html>

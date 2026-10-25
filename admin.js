@@ -9,9 +9,9 @@
         setTimeout(function () { location.href = 'login.html'; }, 1100);
         return;
     }
-    var LOW = 10, STATUS = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'], DAY = 864e5;
+    var LOW = 10, STATUS = ['Pending', 'Preparing', 'Ready', 'Completed', 'Returned', 'Cancelled'], DAY = 864e5;
     var PALETTE = ['#93494A', '#E08EAA', '#F4C2D6', '#A15D24', '#75672C', '#CEA386', '#554C4E'];
-    var STATUS_COLOR = { Pending: '#E08EAA', Preparing: '#A15D24', Ready: '#75672C', Completed: '#93494A', Cancelled: '#554C4E' };
+    var STATUS_COLOR = { Pending: '#E08EAA', Preparing: '#A15D24', Ready: '#75672C', Completed: '#93494A', Returned: '#CEA386', Cancelled: '#554C4E' };
     var cat = function () { return SH.catalog(); };
 
     /* sample data so the admin pages are not empty (real orders from checkout are added to it) */
@@ -180,20 +180,28 @@
                 return '<button class="' + (s === filter ? 'on' : '') + '" data-f="' + s + '">' + s + ' (' + n + ')</button>';
             }).join('') + '<input id="q" placeholder="Search order # or customer" value="' + esc(q) + '">';
             var list = all.filter(function (o) { return (filter === 'All' || o.status === filter) && (!q || (o.id + ' ' + o.name).toLowerCase().indexOf(q.toLowerCase()) > -1); });
-            $('#ord').innerHTML = '<tr><th>Order</th><th>Customer</th><th>Items</th><th>Type</th><th>Payment</th><th>Total</th><th>Date</th><th>Status</th></tr>' + (list.length ? list.map(function (o) {
+            $('#ord').innerHTML = '<tr><th>Order</th><th>Customer</th><th>Items</th><th>Type</th><th>Payment</th><th>Total</th><th>Date</th><th>Rider Location</th><th>Status</th></tr>' + (list.length ? list.map(function (o) {
                 return '<tr><td><b>#' + esc(o.id) + '</b>' + (o.sample ? ' <small>(sample)</small>' : '') + '</td><td>' + esc(o.name) + '</td><td>' +
                     o.items.map(function (i) { return i.qty + 'x ' + esc(i.name); }).join('<br>') + '</td><td>' + esc(o.mode) + '</td><td>' + esc(o.pay) + '</td><td><b>' + fmt(o.total) + '</b></td><td>' + dstr(o.date) +
-                    '</td><td><select class="st" data-o="' + esc(o.id) + '">' + STATUS.map(function (s) { return '<option' + (s === o.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></td></tr>';
-            }).join('') : '<tr><td colspan="8" class="empty">No orders found.</td></tr>');
+                    '</td><td><input type="text" class="rider_location" data-location="' + esc(o.id) + '" value="' + esc(o.riderLocation || '') + '" placeholder="Enter rider location"></td><td><select class="st" data-o="' + esc(o.id) + '">' + STATUS.map(function (s) { return '<option' + (s === o.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></td></tr>';
+            }).join('') : '<tr><td colspan="9" class="empty">No orders found.</td></tr>');
             var qi = $('#q'); qi.addEventListener('input', function () { q = qi.value; var p = qi.selectionStart; drawOrders(); var n = $('#q'); n.focus(); n.setSelectionRange(p, p); });
         };
         $('#filters').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.getAttribute('data-f'); drawOrders(); } });
         $('#ord').addEventListener('change', function (e) {
+            var loc = e.target.closest('input[data-location]');
+            if (loc) {
+                var locOrders = orders(), locOrder = locOrders.filter(function (x) { return x.id === loc.getAttribute('data-location'); })[0];
+                if (locOrder) { locOrder.riderLocation = loc.value.trim(); S.set('sh_orders', locOrders); SH.toast('Rider location updated.'); }
+                return;
+            }
             var sel = e.target.closest('select[data-o]'); if (!sel) return;
             var all = orders(), o = all.filter(function (x) { return x.id === sel.getAttribute('data-o'); })[0], st = SH.stock(), was = o.status, now = sel.value;
             if (now === 'Cancelled' && was !== 'Cancelled') o.items.forEach(function (i) { st[i.name] = (st[i.name] || 0) + i.qty; });
             if (was === 'Cancelled' && now !== 'Cancelled') o.items.forEach(function (i) { st[i.name] = Math.max(0, (st[i.name] || 0) - i.qty); });
-            o.status = now; S.set('sh_orders', all); SH.saveStock(st); SH.toast('Order #' + o.id + ' is now ' + now); drawOrders();
+            o.status = now;
+            if (now === 'Completed' && /cash|cod/i.test(o.pay || '')) o.paid = true;
+            S.set('sh_orders', all); SH.saveStock(st); SH.toast('Order #' + o.id + ' is now ' + now); drawOrders();
         });
         drawOrders();
     }

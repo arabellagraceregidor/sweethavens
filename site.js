@@ -4,6 +4,13 @@
         get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
         set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
     };
+    /* Remove the accounts that existed before this update only once; later sign-ups stay available. */
+    if (!S.get('sh_existing_nonadmin_removed_v1', false)) {
+        S.set('sh_users', S.get('sh_users', []).filter(function (x) { return x && String(x.role || '').toLowerCase() === 'admin'; }));
+        var savedSession = S.get('sh_user', null);
+        if (savedSession && String(savedSession.role || '').toLowerCase() !== 'admin') S.set('sh_user', null);
+        S.set('sh_existing_nonadmin_removed_v1', true);
+    }
     var $ = function (s, r) { return (r || document).querySelector(s); };
     var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
     var norm = function (s) { return String(s).trim().replace(/\s+/g, ' ').toLowerCase(); };
@@ -162,9 +169,11 @@
         };
         if (u) {
             if (u.role !== 'admin') add('my_orders.html', 'My Orders');
+            add('account.html', 'My Account');
             add('#', 'Log Out', 'logout_link');
             $('#logout_link').addEventListener('click', function (e) { e.preventDefault(); logout(); });
             var pic = $('#pfp_btn'); if (pic) pic.title = u.name + (u.role === 'admin' ? ' (Admin)' : '');
+            if (pic && pic.parentNode && pic.parentNode.tagName === 'A') pic.parentNode.href = 'account.html';
         }
         /* Menu always opens the product menu; admin nav stays when viewing it */
         $$('a.nav1', nav).forEach(function (a) {
@@ -280,11 +289,8 @@
         if (!card) return;
         var info = e.target.closest('.info-btn'), add = e.target.closest('.cart-btn'), ord = e.target.closest('.order-btn');
         if (info) {
-            var nm = $('.card-header', card).textContent.trim(), p = find(nm);
-            modal('<img src="' + esc($('.product-img', card).getAttribute('src')) + '" alt=""><h3>' + esc(nm) + '</h3><small>' + esc($('.card-notif', card).textContent) +
-                '</small><p>' + esc($('.card-p', card).textContent) + '</p><div class="price">' + (p ? fmt(p.p) : '') + '</div>' +
-                '<button class="btn_dark" id="m_add">Add to cart</button> <button class="btn_dark" data-close="1" style="background:#D9D9D9;color:#000">Close</button>');
-            $('#m_add').onclick = function () { if (needLogin()) { $('#modal').classList.remove('on'); return; } cartToast(addItem(card)); $('#modal').classList.remove('on'); };
+            var nm = $('.card-header', card).textContent.trim();
+            location.href = 'product.html?product=' + encodeURIComponent(nm);
         } else if (add || ord) {
             /* the link inside "Add to cart" must NEVER jump to the cart page (that was the bug on every 2nd product) */
             e.preventDefault();

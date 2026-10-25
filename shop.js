@@ -268,7 +268,7 @@
                 c.forEach(function (i) { st[i.name] = Math.max(0, (st[i.name] == null ? 0 : st[i.name]) - i.qty); });
                 SH.saveStock(st);
                 var orders = S.get('sh_orders', []);
-                orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value,
+                orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value, paid: method.value !== 'cash', riderLocation: '',
                     items: c.map(function (i) { return { name: i.name, qty: i.qty, price: i.price, img: i.img }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString(),
                     readyAt: etaFor(c, mode).ready.toISOString(), arriveAt: etaFor(c, mode).arrive ? etaFor(c, mode).arrive.toISOString() : null });
                 S.set('sh_orders', orders); S.set('sh_last', id); SH.saveCart([]);
@@ -309,7 +309,7 @@
     if (mo) {
         var STEPS = { 'Delivery': ['Order placed', 'Preparing', 'Out for delivery', 'Delivered'], 'Pick Up': ['Order placed', 'Preparing', 'Ready for pick up', 'Picked up'] };
         var IDX = { Pending: 0, Preparing: 1, Ready: 2, Completed: 3 };
-        var TABS = [['All', null], ['To Prepare', ['Pending', 'Preparing']], ['To Receive', ['Ready']], ['Completed', ['Completed']], ['Cancelled', ['Cancelled']]];
+        var TABS = ['All', 'To Pay', 'To Ship', 'To Receive', 'To Review', 'Return'];
         var tab = 'All', lastSig = '';
         var SAY = {
             Pending: 'We received your order and will start baking soon.',
@@ -326,11 +326,15 @@
                 .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
         };
         var picOf = function (i) { var p = SH.find(i.name); return i.img || (p && p.img) || 'assets/Logo.png'; };
+        var allReviews = function () { return S.get('sh_reviews', []); };
+        var reviewed = function (o, i) { return allReviews().some(function (r) { return String(r.id) === String(o.id) + '_' + String(i); }); };
+        var isPaid = function (o) { return o.paid === true || (o.paid == null && !/cash|cod/i.test(o.pay || '')); };
         var orderCard = function (o) {
-            var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled';
-            var head = gone ? 'Order cancelled' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
+            var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled', returned = o.status === 'Returned';
+            var head = gone ? 'Order cancelled' : returned ? 'Returned' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
             var say = SAY[o.status === 'Ready' || o.status === 'Completed' ? o.status + ':' + o.mode : o.status] || '';
-            var track = gone ? '' : '<div class="track"><span class="track_fill" data-w="calc(75% * ' + (done ? 3 : idx) + ' / 3)"></span>' + steps.map(function (s, i) {
+            if (returned) say = 'This order was successfully returned.';
+            var track = gone || returned ? '' : '<div class="track"><span class="track_fill" data-w="calc(75% * ' + (done ? 3 : idx) + ' / 3)"></span>' + steps.map(function (s, i) {
                 var d = done || i < idx, n = !done && i === idx;
                 return '<div class="step' + (d ? ' done' : n ? ' now' : '') + '"><i>' + (d ? '\u2713' : (i + 1)) + '</i><span>' + s + '</span></div>';
             }).join('') + '</div>';
@@ -339,32 +343,83 @@
             var lines = o.items.map(function (i) {
                 return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt=""><div class="oc_name"><b>' + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
             }).join('');
+            var rider = o.mode === 'Delivery' && o.status === 'Ready' ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
             return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(o.id) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
-                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + track + eta + lines +
+                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + track + eta + rider + lines +
                 '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
                 '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button></div></div></div>';
         };
+        var reviewCards = function (all) {
+            var rows = [];
+            all.forEach(function (o) {
+                if (o.status === 'Cancelled' || o.status === 'Returned') return;
+                (o.items || []).forEach(function (i, index) {
+                    if (reviewed(o, index)) return;
+                    rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(o.id) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
+                        '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt=""><div class="oc_name"><b>' + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
+                        '<div class="oc_btns" style="align-items:center"><span>Quick review:</span><span class="quick_rating" data-order="' + esc(o.id) + '" data-item="' + index + '" style="display:flex;gap:4px"></span>' +
+                        '<button type="button" data-quick-submit="' + esc(o.id) + '" data-item="' + index + '">Submit</button><button type="button" data-refund="' + esc(o.id) + '" data-item="' + index + '">Request Refund</button>' +
+                        '<button type="button" class="oc_again" data-write-review="' + esc(o.id) + '" data-item="' + index + '" data-product="' + esc(i.name) + '">Write a Review</button></div></div>');
+                });
+            });
+            return rows.length ? rows.join('') : '<div class="order_card"><p class="empty">No products are waiting for review.</p></div>';
+        };
         var drawOrders = function (force) {
-            var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status]; }));
+            var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status, o.paid, o.riderLocation]; })) + JSON.stringify(allReviews().map(function (r) { return r.id; }));
             if (!force && sig === lastSig) return;
             lastSig = sig;
-            var want = (TABS.filter(function (x) { return x[0] === tab; })[0] || [])[1];
-            var list = want ? all.filter(function (o) { return want.indexOf(o.status) > -1; }) : all;
-            var bar = '<div class="oc_tabs">' + TABS.map(function (x) {
-                var n = x[1] ? all.filter(function (o) { return x[1].indexOf(o.status) > -1; }).length : all.length;
-                return '<button type="button" class="' + (x[0] === tab ? 'on' : '') + '" data-tab="' + x[0] + '">' + x[0] + (n ? ' <em>' + n + '</em>' : '') + '</button>';
+            var list = all.filter(function (o) {
+                if (tab === 'To Pay') return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned';
+                if (tab === 'To Ship') return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up');
+                if (tab === 'To Receive') return o.status === 'Ready' && o.mode === 'Delivery';
+                if (tab === 'Return') return o.status === 'Returned';
+                return true;
+            });
+            var counts = {
+                'All': all.length,
+                'To Pay': all.filter(function (o) { return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned'; }).length,
+                'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up'); }).length,
+                'To Receive': all.filter(function (o) { return o.status === 'Ready' && o.mode === 'Delivery'; }).length,
+                'To Review': all.filter(function (o) { return o.status !== 'Cancelled' && o.status !== 'Returned'; }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
+                'Return': all.filter(function (o) { return o.status === 'Returned'; }).length
+            };
+            var bar = '<div class="oc_tabs">' + TABS.map(function (name) {
+                var n = counts[name];
+                return '<button type="button" class="' + (name === tab ? 'on' : '') + '" data-tab="' + name + '">' + name + (n ? ' <em>' + n + '</em>' : '') + '</button>';
             }).join('') + '</div>';
             var body;
             if (!all.length) body = '<p class="empty">You have no orders yet.</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>';
+            else if (tab === 'To Review') body = reviewCards(all);
             else if (!list.length) body = '<p class="empty">No orders in "' + tab + '".</p>';
             else body = list.map(orderCard).join('');
             mo.innerHTML = '<h1>My Orders</h1>' + bar + body;
+            $$('.quick_rating', mo).forEach(function (host) {
+                for (var i = 1; i <= 5; i++) { var star = document.createElement('button'); star.type = 'button'; star.textContent = '\u2606'; star.setAttribute('data-value', i); star.style.cssText = 'border:0;background:transparent;padding:0 2px;color:var(--mar);font-size:26px;cursor:pointer'; host.appendChild(star); }
+            });
             requestAnimationFrame(function () { requestAnimationFrame(function () { $$('.track_fill', mo).forEach(function (f) { f.style.width = f.getAttribute('data-w'); }); }); });
         };
         mo.addEventListener('click', function (e) {
-            var tb = e.target.closest('[data-tab]'), rc = e.target.closest('.oc_rc'), ag = e.target.closest('.oc_again');
+            var tb = e.target.closest('[data-tab]'), rc = e.target.closest('.oc_rc'), ag = e.target.closest('[data-again]');
             if (tb) { tab = tb.getAttribute('data-tab'); drawOrders(true); return; }
             if (rc) { S.set('sh_last', rc.getAttribute('data-rc')); location.href = 'receipt.html'; return; }
+            var star = e.target.closest('.quick_rating [data-value]');
+            if (star) {
+                var host = star.parentNode, value = +star.getAttribute('data-value'); host.setAttribute('data-rating', value);
+                Array.prototype.forEach.call(host.children, function (x, i) { x.textContent = i < value ? '\u2605' : '\u2606'; }); return;
+            }
+            var quick = e.target.closest('[data-quick-submit]');
+            if (quick) {
+                var orderKey = quick.getAttribute('data-quick-submit'), itemKey = +quick.getAttribute('data-item'), ratingHost = mo.querySelector('.quick_rating[data-order="' + orderKey + '"][data-item="' + itemKey + '"]'), rating = +(ratingHost && ratingHost.getAttribute('data-rating'));
+                if (!rating) { SH.toast('Choose one to five stars first.'); return; }
+                var orderForReview = all.filter(function (o) { return String(o.id) === orderKey; })[0], reviewItem = orderForReview && orderForReview.items[itemKey];
+                if (!orderForReview || !reviewItem) return;
+                var reviewList = allReviews(); reviewList.push({ id: String(orderKey) + '_' + itemKey, orderId: orderKey, itemIndex: itemKey, product: reviewItem.name, userName: SH.user().name, stars: rating, text: '', date: new Date().toISOString() });
+                S.set('sh_reviews', reviewList); SH.toast('Your quick review was submitted.'); drawOrders(true); return;
+            }
+            var refund = e.target.closest('[data-refund]');
+            if (refund) { location.href = 'refund.html?order=' + encodeURIComponent(refund.getAttribute('data-refund')) + '&item=' + encodeURIComponent(refund.getAttribute('data-item')); return; }
+            var write = e.target.closest('[data-write-review]');
+            if (write) { location.href = 'product.html?product=' + encodeURIComponent(write.getAttribute('data-product')) + '&order=' + encodeURIComponent(write.getAttribute('data-write-review')); return; }
             if (ag) {
                 var o = S.get('sh_orders', []).filter(function (x) { return x.id === ag.getAttribute('data-again'); })[0]; if (!o) return;
                 var c = SH.cart(), added = 0;
