@@ -6,7 +6,7 @@
     var STAFF = [{ name: 'Sweet Havens Admin', pw: 'Admin12345', role: 'admin' }];
     var norm = SH.norm;
 
-    /* Password recovery for saved accounts and the built-in admin demo account. */
+    /* Password recovery or Reset password form for saved accounts and the built-in admin demo account. */
     if (resetForm) {
         resetForm.addEventListener('submit', function (e) {
             e.preventDefault();
