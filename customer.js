@@ -61,7 +61,7 @@
                 var c = SH.cart(), hit = c.filter(function (x) { return norm(x.name) === norm(product.n); })[0];
                 if (hit) hit.qty++; else c.push({ name: product.n, price: product.p, img: image, qty: 1 });
                 SH.saveCart(c);
-                if (go) location.href = 'cart.html'; else SH.cartToast(product.n);
+                if (go) location.href = 'cart.html'; else { SH.animateCartButton($('#product_add')); SH.cartToast(product.n); }
             }
             $('#product_add').addEventListener('click', function () { addToCart(false); });
             $('#product_order').addEventListener('click', function () { addToCart(true); });

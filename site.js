@@ -4,6 +4,11 @@
         get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
         set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
     };
+    /* Auto-login if remember me was checked */
+    var remembered = S.get('sh_remember', null);
+    if (remembered && !S.get('sh_user', null)) {
+        S.set('sh_user', remembered);
+    }
     /* Remove the accounts that existed before this update only once; later sign-ups stay available. */
     if (!S.get('sh_existing_nonadmin_removed_v1', false)) {
         S.set('sh_users', S.get('sh_users', []).filter(function (x) { return x && String(x.role || '').toLowerCase() === 'admin'; }));
@@ -97,6 +102,27 @@
     }
     /* same message every time a product goes into the cart */
     function cartToast(name) { toast('\u2713 ' + name + ' has been added to your cart.', { href: 'cart.html', text: 'View Cart' }); }
+    function animateCartButton(button) {
+        if (!button || button.classList.contains('is-adding') || button.classList.contains('is-success')) return;
+        var cartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>';
+        var checkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12 3.4 13.4 9 19l12-12-1.4-1.4z"/></svg>';
+        var original = button.innerHTML, oldMinWidth = button.style.minWidth, oldDisabled = button.disabled, oldAriaLabel = button.getAttribute('aria-label');
+        button.style.minWidth = Math.ceil(button.getBoundingClientRect().width) + 'px';
+        button.disabled = true;
+        button.classList.add('cart-feedback', 'is-adding');
+        button.setAttribute('aria-label', 'Adding to cart');
+        button.innerHTML = '<span class="cart-feedback-icon">' + cartIcon + '</span>';
+        setTimeout(function () {
+            button.classList.remove('is-adding'); button.classList.add('is-success');
+            button.setAttribute('aria-label', 'Added to cart');
+            button.innerHTML = '<span class="cart-feedback-icon">' + checkIcon + '</span>';
+            setTimeout(function () {
+                button.innerHTML = original; button.style.minWidth = oldMinWidth;
+                button.disabled = oldDisabled; button.classList.remove('cart-feedback', 'is-success');
+                if (oldAriaLabel == null) button.removeAttribute('aria-label'); else button.setAttribute('aria-label', oldAriaLabel);
+            }, 2500);
+        }, 2000);
+    }
 
     /* "LOG IN FIRST FIRST!" pop-up (design slide) for visitors who are not signed in */
     var WARN = '<svg class="am_icon" viewBox="0 0 120 108" aria-hidden="true"><path d="M60 10 L110 96 H10 Z" fill="#E08EAA" stroke="#F4C2D6" stroke-width="10" stroke-linejoin="round"/>' +
@@ -159,10 +185,11 @@
             try { input.focus({ preventScroll: true }); } catch (x) { input.focus(); }
         });
     }
-    function logout() { S.set('sh_user', null); S.set('sh_cart', []); location.href = 'login.html'; }
+    function logout() { S.set('sh_user', null); S.set('sh_cart', []); S.set('sh_remember', null); location.href = 'login.html'; }
 
-    window.SH = { cartToast: cartToast, loginModal: loginModal, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
+    window.SH = { cartToast: cartToast, animateCartButton: animateCartButton, loginModal: loginModal, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
         saveCart: saveCart, stock: stock, stockCount: stockCount, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout, ensureOrderTags: ensureOrderTags, nextOrderTag: nextOrderTag, orderTagLabel: orderTagLabel };
+    window.goBack = function () { if (window.history.length > 1) window.history.back(); else location.href = 'home_page.html'; };
 
     /* ---- light / dark mode button ---- */
     var theme = 'light';
@@ -179,6 +206,20 @@
     var currentPage = location.pathname.split('/').pop();
     if (u && u.role === 'admin' && (currentPage === 'my_orders.html' || currentPage === 'account.html')) location.replace('dashboard.html');
     var nav = $('#admin_nav_buttons') || $('#nav_buttons');
+
+    /* Add back button to header if not already present */
+    var header = document.querySelector('header');
+    if (header && !$('#back_btn')) {
+        var titleCont = $('#h_title-cont');
+        if (titleCont) {
+            var backBtn = document.createElement('button');
+            backBtn.className = 'back-btn';
+            backBtn.id = 'back_btn';
+            backBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> Back';
+            backBtn.onclick = function () { if (window.history.length > 1) window.history.back(); else location.href = 'home_page.html'; };
+            titleCont.insertBefore(backBtn, titleCont.firstChild);
+        }
+    }
     /* Admin viewing the shop menu: keep admin nav (no About Us / Nearest Shop / Cart) */
     if (u && u.role === 'admin' && $('#nav_buttons') && !$('#admin_nav_buttons')) {
         var cust = $('#nav_buttons'), pfp = cust.lastElementChild;
@@ -309,6 +350,7 @@
             $('.card-header', k).textContent = p.n; $('.card-notif', k).textContent = 'New!';
             $('.card-p', k).textContent = p.d || 'Freshly baked and ready to order.';
             $('.info-btn', k).textContent = 'Learn More'; $('.order-btn', k).textContent = 'Order Now';
+            $('.cart-btn', k).innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>Add to cart';
             box.appendChild(k);
         });
     }
@@ -386,14 +428,17 @@
             m.addEventListener('click', function (e) { if (e.target === m || e.target.getAttribute('data-close')) m.classList.remove('on'); }); }
         $('#mbox').innerHTML = html; m.classList.add('on');
     }
-    function addItem(card) {
+    function addItem(card, animate) {
         var name = $('.card-header', card).textContent.trim(), p = find(name) || { p: 0 };
         var c = cart(), f = c.filter(function (i) { return norm(i.name) === norm(name); })[0];
         var available = stockCount(name);
         if (available <= 0) { toast(name + ' is out of stock.'); syncProductStock(); return null; }
         if (f && f.qty >= available) { toast('Only ' + available + ' ' + name + ' available.'); return null; }
         if (f) f.qty++; else c.push({ name: name, price: p.p, img: $('.product-img', card).getAttribute('src'), qty: 1 });
-        saveCart(c); return name;
+        saveCart(c);
+        if (animate) animateCartButton($('.cart-btn', card));
+
+        return name;
     }
     document.addEventListener('click', function (e) {
         var card = e.target.closest ? e.target.closest('.product-card') : null;
@@ -409,7 +454,7 @@
             /* the link inside "Add to cart" must NEVER jump to the cart page (that was the bug on every 2nd product) */
             e.preventDefault();
             if (needLogin()) return;
-            var added = addItem(card);
+            var added = addItem(card, !!add);
             if (!added) return;
             if (ord) { location.href = 'cart.html'; }
             else cartToast(added);

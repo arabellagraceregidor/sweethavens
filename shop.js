@@ -73,24 +73,39 @@
             return '<div class="wish_top"><button type="button" class="wish_toggle' + (wishOpen ? ' open' : '') + '" aria-expanded="' + wishOpen + '" title="My wishlist" aria-label="My wishlist">' +
                 SH.HEART + '<span class="wish_count"' + (n ? '' : ' hidden') + '>' + n + '</span></button></div>' + wishPanel();
         };
+        var editMode = false;
+        var selectedItems = [];
         var drawCart = function () {
             var c = SH.cart();
             if (!c.length) { wrap.innerHTML = wishHead() + '<p class="empty">Your cart is empty. Add a cookie from the Menu!</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>'; return; }
             var sub = 0;
             var unavailable = stockProblem(c);
-            wrap.innerHTML = wishHead() + c.map(function (it, i) {
+            var cartHTML = c.map(function (it, i) {
                 sub += it.price * it.qty;
                 var available = SH.stockCount(it.name), status = available <= 0 ? 'Out of Stock' : it.qty > available ? 'Only ' + available + ' available' : '';
-                return '<div class="cart_card"><div class="cart_img-cont"><img src="' + esc(it.img) + '" class="cart_img"></div>' +
+                var checkbox = editMode ? '<input type="checkbox" class="cart_select" data-i="' + i + '"' + (selectedItems.indexOf(i) > -1 ? ' checked' : '') + '>' : '';
+                var editBtn = !editMode ? '<button type="button" class="cart_edit" data-i="' + i + '">Edit</button>' : '';
+                return '<div class="cart_card' + (editMode ? ' editing' : '') + '"><div class="cart_img-cont"><img src="' + esc(it.img) + '" class="cart_img"></div>' +
                     '<div class="cart_info-cont"><p class="cart_name">' + esc(it.name) + '</p><p class="cart_price">' + fmt(it.price) + '</p>' + (status ? '<b>' + status + '</b>' : '') + '</div>' +
                     '<div class="cart_quantity-cont"><button class="cart_minus" data-i="' + i + '">-</button><p class="cart_quantity">' + it.qty +
-                    '</p><button class="cart_plus" data-i="' + i + '"' + (it.qty >= available ? ' disabled' : '') + '>+</button></div></div>';
-            }).join('') + '<div class="cart_total"><span>Subtotal</span><b>' + fmt(sub) + '</b></div>' +
-                '<button type="button" class="cart_checkout" data-delivery' + (unavailable.length ? ' disabled aria-disabled="true"' : '') + '>Proceed to Checkout</button>';
+                    '</p><button class="cart_plus" data-i="' + i + '"' + (it.qty >= available ? ' disabled' : '') + '>+</button></div>' +
+                    '<div class="cart_actions">' + checkbox + editBtn + '</div></div>';
+            }).join('');
+            var editActions = editMode ? '<div class="edit_actions"><button type="button" class="edit_buy">Buy Selected (' + selectedItems.length + ')</button>' +
+                '<button type="button" class="edit_delete">Delete Selected</button><button type="button" class="edit_wishlist">Add to Wishlist</button><button type="button" class="edit_cancel">Cancel</button></div>' : '';
+            wrap.innerHTML = wishHead() + cartHTML + '<div class="cart_total"><span>Subtotal</span><b>' + fmt(sub) + '</b></div>' +
+                '<button type="button" class="cart_checkout" data-delivery' + (unavailable.length ? ' disabled aria-disabled="true"' : '') + '>Proceed to Checkout</button>' + editActions;
         };
         wrap.addEventListener('click', function (e) {
             var wt = e.target.closest('.wish_toggle'), wa = e.target.closest('.wish_add'), wr = e.target.closest('.wish_rm');
             var checkout = e.target.closest('[data-delivery]');
+            var editBtn = e.target.closest('.cart_edit');
+            var selectBox = e.target.closest('.cart_select');
+            var buyBtn = e.target.closest('.edit_buy');
+            var deleteBtn = e.target.closest('.edit_delete');
+            var wishlistBtn = e.target.closest('.edit_wishlist');
+            var cancelBtn = e.target.closest('.edit_cancel');
+
             if (checkout) {
                 var checkoutCart = SH.cart(), blocked = stockProblem(checkoutCart);
                 if (blocked.length) { SH.toast('Remove unavailable or excess products before checkout.'); return; }
@@ -107,6 +122,63 @@
                     SH.saveCart(cc); SH.cartToast(w.name);
                 } else { SH.toggleWish(w.name); SH.toast(w.name + ' was removed from your wishlist.'); }
                 drawCart(); return;
+            }
+            if (editBtn) {
+                editMode = true;
+                selectedItems = [];
+                drawCart();
+                return;
+            }
+            if (selectBox) {
+                var idx = +selectBox.getAttribute('data-i');
+                if (selectBox.checked) {
+                    if (selectedItems.indexOf(idx) === -1) selectedItems.push(idx);
+                } else {
+                    selectedItems = selectedItems.filter(function (i) { return i !== idx; });
+                }
+                drawCart();
+                return;
+            }
+            if (cancelBtn) {
+                editMode = false;
+                selectedItems = [];
+                drawCart();
+                return;
+            }
+            if (buyBtn) {
+                if (selectedItems.length === 0) { SH.toast('Select at least one product to buy.'); return; }
+                var c = SH.cart();
+                var selectedProducts = selectedItems.map(function (i) { return c[i]; });
+                var sub = selectedProducts.reduce(function (a, i) { return a + i.price * i.qty; }, 0);
+                SH.saveCart(selectedProducts);
+                SH.toast(selectedProducts.length + ' product(s) selected. Total: ' + fmt(sub));
+                location.href = 'delivery.html';
+                return;
+            }
+            if (deleteBtn) {
+                if (selectedItems.length === 0) { SH.toast('Select at least one product to delete.'); return; }
+                var c = SH.cart();
+                selectedItems.sort(function (a, b) { return b - a; }).forEach(function (i) { c.splice(i, 1); });
+                SH.saveCart(c);
+                selectedItems = [];
+                editMode = false;
+                SH.toast('Selected products deleted from cart.');
+                drawCart();
+                return;
+            }
+            if (wishlistBtn) {
+                if (selectedItems.length === 0) { SH.toast('Select at least one product to add to wishlist.'); return; }
+                var c = SH.cart();
+                selectedItems.forEach(function (i) {
+                    var item = c[i];
+                    var p = SH.find(item.name);
+                    SH.toggleWish(item.name, item.img || (p && p.img) || 'assets/Logo.png');
+                });
+                SH.toast(selectedItems.length + ' product(s) added to wishlist.');
+                selectedItems = [];
+                editMode = false;
+                drawCart();
+                return;
             }
             var b = e.target.closest('.cart_minus, .cart_plus'); if (!b) return;
             var c = SH.cart(), i = +b.getAttribute('data-i');

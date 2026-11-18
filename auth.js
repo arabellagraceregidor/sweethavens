@@ -55,7 +55,7 @@
     if (back) back.textContent = 'Log In';
 
     /* floating-label fields + asterisk on required boxes */
-    var inputs = Array.prototype.slice.call(form.querySelectorAll('input'));
+    var inputs = Array.prototype.slice.call(form.querySelectorAll('input')).filter(function (i) { return i.id !== 'remember_me'; });
     inputs.forEach(function (i) {
         if (!i.id) i.id = i.name + '_in';
         var label = form.querySelector('label[for="' + i.id + '"]') || form.querySelector('label[for="' + i.name + '"]');
@@ -142,6 +142,7 @@
             go('login.html', 'login');
         } else {
             var n = val('f_name'), p = $('#password').value;
+            var rememberMe = $('#remember_me') && $('#remember_me').checked;
             var u = STAFF.filter(function (s) {
                 var savedPassword = s.role === 'admin' ? S.get('sh_admin_password', s.pw) : s.pw;
                 return norm(s.name) === norm(n) && savedPassword === p;
@@ -151,6 +152,11 @@
             if (wantAdmin && !(u && u.role === 'admin')) { bad($('#f_name')); bad($('#password')); msg.textContent = 'ADMIN ONLY!'; jump($('#f_name')); return; }
             if (!u) { bad($('#f_name')); bad($('#password')); msg.textContent = 'LOG IN FIRST FIRST!'; jump($('#f_name')); return; }
             S.set('sh_user', { name: u.name, role: u.role || 'customer' });
+            if (rememberMe) {
+                S.set('sh_remember', { name: u.name, role: u.role || 'customer' });
+            } else {
+                S.set('sh_remember', null);
+            }
             var back = '';
             try { back = sessionStorage.getItem('sh_return') || ''; sessionStorage.removeItem('sh_return'); } catch (x) {}
             location.href = u.role === 'admin' ? 'dashboard.html' : (back || 'home_page.html');
