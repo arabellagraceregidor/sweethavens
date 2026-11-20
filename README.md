@@ -57,9 +57,11 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
 - Live Site: https://arabellagraceregidor.github.io/sweethavens/
 
 ## Lessons Learned
-- Improved collaboration using Git version control
-- Learned how to deploy static sites via GitHub Pages
-- Practiced responsive design and semantic HTML
+- Improved team collaboration and conflict resolution using Git and GitHub version control
+- Learned how to configure and deploy static websites via GitHub Pages
+- Practiced semantic HTML and responsive CSS layouts using Flexbox and CSS Grid
+- Implemented interactive e-commerce workflows (cart, checkout, authentication, and admin inventory management) using JavaScript
+- Translated UI wireframes and brand guidelines into a cohesive, user-friendly interface
 
 ## Timeline
 | Phase | Task | Date |
