@@ -261,6 +261,17 @@ a.nav1.here::after{ width:100%; }
 .back-btn{ display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--pink); color:var(--mar); border:none; border-radius:16px; font-family:var(--ari); font-size:14px; font-weight:600; cursor:pointer; transition:transform .15s, filter .2s; }
 .back-btn:hover{ transform:translateY(-2px); filter:brightness(1.05); }
 .back-btn svg{ width:16px; height:16px; fill:var(--mar); }
+[data-theme="dark"] .back-btn {
+  background: transparent;
+  color: #F4C2D6;
+}
+[data-theme="dark"] .back-btn:hover {
+  background: rgba(244, 194, 214, 0.14);
+  color: #ffffff;
+}
+[data-theme="dark"] .back-btn svg {
+  fill: currentColor;
+}
 .card-header{ font-style:italic; }
 .button-cont{ display:flex; flex-wrap:wrap; gap:8px; }
 .product-card[style*="rgb(161, 93, 36)"] .card-header, .product-card[style*="rgb(161, 93, 36)"] .card-p,
