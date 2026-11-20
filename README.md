@@ -53,8 +53,8 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
 - **Layout:** Responsive Flexbox and CSS Grid layout with mobile, tablet, and desktop breakpoints plus reduced-motion accessibility support.
 
 ## Deployment
-- GitHub Repository: [Link ng Repository Mo]
-- Live Site: [Link ng GitHub Pages Mo]
+- GitHub Repository: https://github.com/arabellagraceregidor/sweethavens.git
+- Live Site: https://arabellagraceregidor.github.io/sweethavens/
 
 ## Lessons Learned
 - Improved collaboration using Git version control
