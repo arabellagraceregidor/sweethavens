@@ -1,30 +1,70 @@
-# SweetHavens - Cookie Bakeshop Website 
+# SweetHavens - Cookie Bakeshop Website
 
-This project is a web-based e-commerce proposal for **SweetHavens**, a fictional cookie bakeshop. The website is designed to provide customers with an easy way to browse products, place orders, and track deliveries, while offering store owners a centralized system for inventory and schedule management.
+## Project Overview
+This website was developed by BSIS-3A Group 1 students as part of their Web Development course. It showcases the products, ordering system, and management dashboard for SweetHavens, a fictional cookie bakeshop.
 
-## 🚀 Project Overview
-This website was developed as part of our **Web Development** course requirements. It serves as a digital platform to showcase SweetHavens' premium cookies and streamline the bakeshop's operations.
+## Purpose
+To provide an online presence for SweetHavens, allow customers to to browse products, place orders, and track deliveries, while offering store owners a centralized system for inventory and schedule management.
 
-## 👥 Project Team (BSIS-3A Group 1)
-- **Arabella Grace Regidor** - Project Manager
-- **John Rafael C. Quebec** - Developer
-- **Mary Grace A. Tucay** - Designer
-- **Samantha Abegail A. Sadia** - Researcher
-- **Clarizze Joy C. Villanueva** - Content Writer
+## Team Members & Roles
+- **Arabella Grace Regidor** – Project Manager
+- **John Rafael C. Quebec** – Developer
+- **Mary Grace A. Tucay** – Designer
+- **Samantha Abegail A. Sadia** – Researcher
+- **Clarizze Joy C. Villanueva** – Content Writer
 
-## 🛠️ Features
-- **Product Catalog:** Categorized menu (Weekly Bakes, Classic Flavors).
-- **Online Ordering System:** Cart functionality, delivery/pick-up options, and payment method selection.
-- **Order Tracking:** Real-time order status updates.
-- **Admin Dashboard:** Exclusive access for store owners to manage products, inventory, and branch schedules.
-- **Responsive Design:** Optimized for both mobile and desktop screens.
+## Tools Used
+- **Languages:** HTML, CSS, JavaScript
+- **Code Editor:** Visual Studio Code
+- **Version Control & Hosting:** Git, GitHub, GitHub Pages
+- **Design & Prototyping:** Figma, Canva
+- **Documentation & Collaboration:** Google Docs, Google Drive
 
-## 💻 How to Run
-1. Clone this repository to your local computer.
-2. Open the folder in **Visual Studio Code**.
-3. Install the **Live Server** extension.
-4. Right-click on `home_page.html` or `index.html` and select **"Open with Live Server"**.
+## Site Structure
+- **Storefront & Ordering**
+  - `index.html` / `home_page.html` – Homepage & landing view
+  - `about.html` – About the bakeshop
+  - `product.html` – Cookie catalog and product details
+  - `cart.html` – Shopping cart and checkout
+  - `orderfinished.html` – Order confirmation page
+  - `my_orders.html` – Customer order history and tracking
+  - `receipt.html` – Digital order receipt
+  - `delivery.html` / `map.html` – Delivery details and location map
+  - `refund.html` – Refund request page
+- **Authentication**
+  - `login.html` – User login
+  - `signup.html` – Account registration
+  - `forgot_password.html` – Password recovery
+- **Admin Management**
+  - `dashboard.html` – Admin overview dashboard
+  - `admin_orders.html` – Admin order monitoring and management
+  - `inventory.html` – Stock and inventory management
+  - `create_products.html` – Add/manage cookie products
+  - `schedule_mngmt.html` – Order/delivery schedule management
+- **Assets, Styles & Scripts**
+  - `assets/` – Images, logos, and icons
+  - `home.css` – Main stylesheet
+  - `site.js` / `shop.js` / `list.js` – Storefront, product listing, and cart logic
+  - `auth.js` / `customer.js` / `admin.js` – Authentication, customer, and admin scripts
 
-## 🎨 Tech Stack
-- **Frontend:** HTML5, CSS3, JavaScript
-- **Tools:** Figma (Wireframing), Canva (Graphics)
+## Design Concept
+- **Color Scheme**: (Ilagay dito ang colors mo, e.g., Pastel brown and cream for a cookie theme)
+- **Typography**: Sans-serif fonts for readability
+- **Layout**: Consistent spacing, mobile-friendly responsive grid
+
+## Deployment
+- GitHub Repository: [Link ng Repository Mo]
+- Live Site: [Link ng GitHub Pages Mo]
+
+## Lessons Learned
+- Improved collaboration using Git version control
+- Learned how to deploy static sites via GitHub Pages
+- Practiced responsive design and semantic HTML
+
+## Timeline
+| Phase | Task | Date |
+|-------|------|------|
+| Proposal | Planning & wireframe | Sept 2026 |
+| Development | Coding & testing | Oct–Nov, 2026 |
+| Deployment | GitHub setup & launch | Nov 21–23, 2026 |
+| Submission | Final documentation | Nov 23, 2026 |
