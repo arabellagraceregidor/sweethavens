@@ -48,9 +48,9 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
   - `auth.js` / `customer.js` / `admin.js` – Authentication, customer, and admin scripts
 
 ## Design Concept
-- **Color Scheme:** Pink and warm cookie-inspired palette featuring Blush White (`#fff5f8`) and White (`#fff`) backgrounds, Light Pink (`#f4c2d6`) headers and footers, Rose Pink (`#e08eaa`) product cards, Deep Rose/Burgundy (`#93494a`) primary buttons and highlights, and Dark Chocolate Brown (`#3a2c2f`) for readable typography.
-- **Typography:** Bakerie for hero branding, Lemonada (`lemon`) for titles and product names, Rugrats Sans for product descriptions, and Arimo for navigation and body text.
-- **Layout:** Responsive Flexbox and CSS Grid layout with mobile, tablet, and desktop breakpoints (`768px`, `992px`, `1200px`, `1400px`) plus reduced-motion accessibility support.
+- **Color Scheme:** Pink and warm cookie-inspired palette featuring Blush White and White backgrounds, Light Pink headers and footers, Rose Pink product cards, Deep Rose/Burgundy primary buttons and highlights, and Dark Chocolate Brown for readable typography.
+- **Typography:** Bakerie for hero branding, Lemonada for titles and product names, Rugrats Sans for product descriptions, and Arimo for navigation and body text.
+- **Layout:** Responsive Flexbox and CSS Grid layout with mobile, tablet, and desktop breakpoints plus reduced-motion accessibility support.
 
 ## Deployment
 - GitHub Repository: [Link ng Repository Mo]
