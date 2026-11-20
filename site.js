@@ -216,7 +216,16 @@
             backBtn.className = 'back-btn';
             backBtn.id = 'back_btn';
             backBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> Back';
-            backBtn.onclick = function () { if (window.history.length > 1) window.history.back(); else location.href = 'home_page.html'; };
+            backBtn.onclick = function () {
+            var p = location.pathname.split('/').pop();
+            if (p === 'login.html' || p === 'signup.html' || p === 'forgot_password.html') {
+                location.href = 'index.html';
+            } else if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                location.href = 'home_page.html';
+            }
+            };
             titleCont.insertBefore(backBtn, titleCont.firstChild);
         }
     }
