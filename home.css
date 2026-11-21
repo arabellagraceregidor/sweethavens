@@ -1074,19 +1074,20 @@ main:has(> form:first-of-type) > h1{ max-width:720px; margin-left:auto; margin-r
 .pw_bar i.weak{ background:var(--err); }
 .pw_bar i.mid{ background:var(--pk2); }
 .pw_bar i.strong{ background:var(--mar); }
+.pw_bar i.ok{ background:var(--mar); }
+.pw_bar i.bad{ background:var(--err); }
 .form_cont form .pw_strength{ display:flex; justify-content:space-between; align-items:center; margin:7px 0 8px; text-align:left; font:700 13px var(--ari); color:var(--ph); }
 .form_cont form .pw_strength b{ font:700 13px var(--ari); color:var(--ph); }
 .form_cont form .pw_strength.weak b{ color:var(--err); }
 .form_cont form .pw_strength.mid b{ color:var(--pk2); }
 .form_cont form .pw_strength.strong b{ color:var(--mar); }
+.form_cont form .pw_strength.ok b{ color:var(--mar); }
+.form_cont form .pw_strength.bad b{ color:var(--err); }
 .pw_rules{ display:flex; flex-wrap:wrap; gap:6px 14px; list-style:none; margin:0; padding:0; }
 .pw_rules li{ display:inline-flex; align-items:center; gap:5px; font:13px var(--ari); color:var(--ph); }
 .pw_rules li::before{ content:"\2713"; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:10px; line-height:1; opacity:.55; }
 .pw_rules li.ok{ color:var(--mar); }
 .pw_rules li.ok::before{ background:var(--mar); border-color:var(--mar); color:#fff; opacity:1; }
-.form_cont form .pw_match{ min-height:16px; margin:8px 0 0; text-align:left; font:13px var(--ari); color:var(--ph); }
-.form_cont form .pw_match.ok{ color:var(--mar); font-weight:700; }
-.form_cont form .pw_match.bad{ color:var(--err); font-weight:700; }
 
 /* ---------- upload button: upload -> Uploaded + the size that was read ---------- */
 .photo_row[data-upload] .up_btn{ display:inline-flex; align-items:center; gap:10px; transition:background .25s, border-color .25s, color .25s, transform .15s; }

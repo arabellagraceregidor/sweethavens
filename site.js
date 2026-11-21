@@ -227,7 +227,8 @@
         var box = document.createElement('div');
         box.className = 'pw_meter';
         if (isConfirm) {
-            box.innerHTML = '<p class="pw_match"><span></span></p>';
+            box.innerHTML = '<div class="pw_bar"><i></i></div>' +
+                '<p class="pw_strength"><span>Confirm password</span><b></b></p>';
         } else {
             box.innerHTML = '<div class="pw_bar"><i></i></div>' +
                 '<p class="pw_strength"><span>Password strength</span><b>Weak</b></p>' +
@@ -242,10 +243,12 @@
         }
         var paint = function () {
             if (isConfirm) {
-                var typed = input.value, match = box.querySelector('.pw_match');
-                if (!typed) { match.querySelector('span').textContent = ''; match.className = 'pw_match'; }
-                else if (typed === main.value) { match.querySelector('span').textContent = 'Passwords match.'; match.className = 'pw_match ok'; }
-                else { match.querySelector('span').textContent = 'Passwords do not match yet.'; match.className = 'pw_match bad'; }
+                var typed = input.value, cBar = box.querySelector('.pw_bar i'), cRow = box.querySelector('.pw_strength');
+                var same = typed !== '' && typed === main.value, state = !typed ? '' : same ? 'ok' : 'bad';
+                cBar.className = state;
+                cBar.style.width = typed ? '100%' : '0%';
+                cRow.className = 'pw_strength' + (state ? ' ' + state : '');
+                cRow.querySelector('b').textContent = !typed ? '' : same ? 'Match' : 'No match';
                 return;
             }
             var v = input.value, c = pwChecks(v), bar = box.querySelector('.pw_bar i');
