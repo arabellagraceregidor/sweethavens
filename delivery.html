@@ -76,7 +76,7 @@
             <div class="pay_panel pay_gcash" id="gcash_checkout" hidden>
                 <div class="pay_badge">GCash</div>
                 <h2>GCash Payment</h2>
-                <p class="pay_hint">Enter your GCash mobile number and MPIN to pay.</p>
+                <p class="pay_hint">Enter your GCash number, then upload a photo of your GCash receipt.</p>
                 <div class="pay_grid">
                     <div class="full">
                         <label for="gc_name">Account name</label>
@@ -84,11 +84,16 @@
                     </div>
                     <div class="full">
                         <label for="gc_num">GCash number</label>
-                        <input type="text" id="gc_num" name="gc_num" placeholder="09123456789" inputmode="numeric" maxlength="11" autocomplete="tel">
+                        <input type="text" id="gc_num" name="gc_num" placeholder="09XX XXX XXXX" inputmode="numeric" maxlength="13" autocomplete="tel">
                     </div>
                     <div class="full">
-                        <label for="gc_pin">MPIN</label>
-                        <input type="password" id="gc_pin" name="gc_pin" placeholder="4–6 digit MPIN" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+                        <label for="gc_file">GCash receipt</label>
+                        <div class="photo_row">
+                            <div class="photo_prev" id="gc_prev"></div>
+                            <input type="file" id="gc_file" accept="image/*" hidden>
+                            <button type="button" class="btn_dark" id="gc_pick">Upload receipt</button>
+                            <span id="gc_fn">No receipt uploaded</span>
+                        </div>
                     </div>
                 </div>
                 <p class="pay_msg" id="gc_msg"></p>

@@ -4,11 +4,6 @@
         get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
         set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
     };
-    /* Auto-login if remember me was checked */
-    var remembered = S.get('sh_remember', null);
-    if (remembered && !S.get('sh_user', null)) {
-        S.set('sh_user', remembered);
-    }
     /* Remove the accounts that existed before this update only once; later sign-ups stay available. */
     if (!S.get('sh_existing_nonadmin_removed_v1', false)) {
         S.set('sh_users', S.get('sh_users', []).filter(function (x) { return x && String(x.role || '').toLowerCase() === 'admin'; }));
@@ -152,6 +147,28 @@
         return true;
     }
 
+    /* red warning pop-up: ADMIN ONLY / USER CANNOT BE FOUND (same design as LOG IN FIRST) */
+    var WARN_COPY = {
+        admin: { t: 'ADMIN ONLY', m: 'This account is not an admin. Log in with an admin account to open the dashboard.' },
+        user: { t: 'USER CANNOT BE FOUND', m: 'No saved account matches that name and password. Check your details or create an account.' }
+    };
+    function warningCard(kind, message) {
+        var copy = WARN_COPY[kind] || WARN_COPY.user;
+        var m = $('#admin_modal');
+        if (!m) {
+            m = document.createElement('div'); m.id = 'admin_modal';
+            document.body.appendChild(m);
+            m.addEventListener('click', function (e) { if (e.target === m || (e.target.closest && e.target.closest('[data-close-warn]'))) m.classList.remove('on'); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && m.classList.contains('on')) m.classList.remove('on'); });
+        }
+        m.innerHTML = '<div class="auth_card warn_card" role="alertdialog" aria-modal="true" aria-labelledby="warn_t">' +
+            '<p class="am_title" id="warn_t">' + esc(copy.t) + '</p>' + WARN +
+            '<p class="am_text">' + esc(message || copy.m) + '</p>' +
+            '<button type="button" class="am_btn" data-close-warn>OK</button></div>';
+        m.classList.remove('on'); void m.offsetWidth; m.classList.add('on');
+        var b = m.querySelector('.am_btn'); if (b) b.focus();
+    }
+
     /* ---- wishlist (saved per customer) ---- */
     var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z"/></svg>';
     var wishKey = function () { var w = user(); return w ? 'sh_wish_' + norm(w.name) : null; };
@@ -187,7 +204,7 @@
     }
     function logout() { S.set('sh_user', null); S.set('sh_cart', []); S.set('sh_remember', null); location.href = 'login.html'; }
 
-    window.SH = { cartToast: cartToast, animateCartButton: animateCartButton, loginModal: loginModal, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
+    window.SH = { cartToast: cartToast, animateCartButton: animateCartButton, loginModal: loginModal, warningCard: warningCard, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
         saveCart: saveCart, stock: stock, stockCount: stockCount, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout, ensureOrderTags: ensureOrderTags, nextOrderTag: nextOrderTag, orderTagLabel: orderTagLabel };
     window.goBack = function () { if (window.history.length > 1) window.history.back(); else location.href = 'home_page.html'; };
 
@@ -208,8 +225,11 @@
     var nav = $('#admin_nav_buttons') || $('#nav_buttons');
 
     /* Add back button to header if not already present */
+    /* the admin dashboard and the customer home page already have Log Out, so no back icon there */
+    var NO_BACK = ['dashboard.html', 'home_page.html', 'index.html'];
+    var herePage = location.pathname.split('/').pop();
     var header = document.querySelector('header');
-    if (header && !$('#back_btn')) {
+    if (header && !$('#back_btn') && NO_BACK.indexOf(herePage) < 0) {
         var titleCont = $('#h_title-cont');
         if (titleCont) {
             var backBtn = document.createElement('button');
@@ -248,6 +268,9 @@
         });
         if (pfp) cust.appendChild(pfp);
         var title = $('#h_title'); if (title) title.setAttribute('href', 'dashboard.html');
+        /* the admin menu is a list only: no Order Now button in the hero section */
+        var heroOrder = $('#h_button');
+        if (heroOrder) { heroOrder.hidden = true; heroOrder.style.display = 'none'; }
         nav = cust;
     }
     if (nav) {
@@ -381,6 +404,10 @@
                 button.disabled = count <= 0 || (u && u.role === 'admin');
                 if (u && u.role === 'admin') button.hidden = true;
             });
+            /* the admin menu is a plain list: no Learn More button either */
+            $$('.info-btn', card).forEach(function (button) {
+                if (u && u.role === 'admin') { button.hidden = true; button.style.display = 'none'; }
+            });
         });
     }
     window.addEventListener('storage', syncProductStock);
@@ -388,6 +415,7 @@
 
     /* ---- wishlist heart at the top-right of every product ---- */
     function initWish() {
+        if (u && u.role === 'admin') return;   /* no wishlist hearts for the admin menu */
         var cards = $$('.product-card'); if (!cards.length) return;
         var layer = document.createElement('div'); layer.id = 'wish_layer'; document.body.appendChild(layer);
         var nameOf = function (c) { return $('.card-header', c).textContent.trim(); };

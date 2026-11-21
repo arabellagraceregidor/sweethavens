@@ -17,10 +17,12 @@
     /* sample data so the admin pages are not empty (real orders from checkout are added to it) */
     function seed(force) {
         if (!force && S.get('sh_seeded', 0)) return;
-        var s = 7, rnd = function () { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+        /* a reset uses a fresh seed so the restored sample data is visibly different */
+        var s = force ? (Date.now() % 233280) + 7 : 7, rnd = function () { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+        var total = force ? 20 + (Date.now() % 7) : 26;
         var names = ['Ana Cruz', 'Ben Reyes', 'Carla Santos', 'Dino Lim', 'Ella Tan', 'Faye Ramos', 'Gio Diaz', 'Hana Co', 'Ivan Uy', 'Jade Ong'];
         var keep = S.get('sh_orders', []).filter(function (o) { return !o.sample; }), made = [];
-        for (var i = 0; i < 26; i++) {
+        for (var i = 0; i < total; i++) {
             var items = [], n = 1 + Math.floor(rnd() * 3);
             for (var k = 0; k < n; k++) {
                 var p = BASE[Math.floor(rnd() * BASE.length)];
@@ -37,6 +39,7 @@
         var st = SH.stock(); BASE.forEach(function (c) { st[c.n] = c.s; });
         st['Matcha Melties'] = 9; st['Choco Crinkles'] = 0; st['Chocolate Chip'] = 26; st['Biscoff Choco Crunch'] = 18;
         SH.saveStock(st); S.set('sh_seeded', 1);
+        return made.length;
     }
     seed(false);
 
@@ -150,6 +153,12 @@
             };
             r.readAsDataURL(f);
         });
+        $('#ap_clear').addEventListener('click', function () {
+            ['ap_name', 'ap_price', 'ap_stock', 'ap_desc'].forEach(function (id) { $('#' + id).value = ''; });
+            ['ap_name', 'ap_price', 'ap_stock'].forEach(function (id) { $('#' + id).classList.remove('invalid'); });
+            photo = ''; $('#ap_prev').style.backgroundImage = ''; $('#ap_fn').textContent = 'No photo selected'; $('#ap_file').value = '';
+            msg(''); $('#ap_name').focus();
+        });
         $('#ap_save').addEventListener('click', function () {
             var nm = $('#ap_name'), pr = $('#ap_price'), sk = $('#ap_stock'), bad = [];
             [nm, pr, sk].forEach(function (i) { i.classList.remove('invalid'); });
@@ -166,7 +175,12 @@
             photo = ''; $('#ap_prev').style.backgroundImage = ''; $('#ap_fn').textContent = 'No photo selected'; $('#ap_file').value = '';
             msg('Product added! It now shows on the home page and in the inventory.'); drawDash();
         });
-        $('#reset').addEventListener('click', function () { seed(true); drawDash(); SH.toast('Sample data reset'); });
+        $('#reset').addEventListener('click', function () {
+            if (!window.confirm('Reset the sample data? The sample orders are replaced and the sample stock levels are restored.')) return;
+            var n = seed(true);
+            drawDash();
+            SH.toast(n + ' sample orders restored.');
+        });
         drawDash();
     }
 
@@ -253,6 +267,12 @@
             readImg(this.files[0], function (data, name) {
                 cpPhoto = data; $('#cp_prev').style.backgroundImage = 'url(' + data + ')'; $('#cp_fn').textContent = name; cpMsg('');
             }, function (m) { cpMsg(m, 1); });
+        });
+        $('#cp_clear').addEventListener('click', function () {
+            clearAdd();
+            ['flavor', 'price'].forEach(function (id) { $('#' + id).classList.remove('invalid'); });
+            cpMsg('');
+            $('#flavor').focus();
         });
         $('#cp_save').addEventListener('click', function () {
             var nm = $('#flavor'), pr = $('#price'), bad = [];

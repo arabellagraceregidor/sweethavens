@@ -200,7 +200,8 @@
         var payLabels = { cash: 'Cash on Delivery', credit: 'Credit/Debit Card', gcash: 'GCash' };
         var cardBox = $('#card_checkout'), cardMsg = $('#card_msg');
         var cardName = $('#card_name'), cardNum = $('#card_number'), cardExp = $('#card_exp'), cardCvc = $('#card_cvc');
-        var gcBox = $('#gcash_checkout'), gcMsg = $('#gc_msg'), gcName = $('#gc_name'), gcNum = $('#gc_num'), gcPin = $('#gc_pin');
+        var gcBox = $('#gcash_checkout'), gcMsg = $('#gc_msg'), gcName = $('#gc_name'), gcNum = $('#gc_num');
+        var gcFile = $('#gc_file'), gcPick = $('#gc_pick'), gcPrev = $('#gc_prev'), gcFn = $('#gc_fn'), gcShot = '';
         var btns = $$('.option-btn'); btns[0].classList.add('active');
         var totals = function () {
             var c = SH.cart(), sub = c.reduce(function (a, i) { return a + i.price * i.qty; }, 0), fee = c.length && mode === 'Delivery' ? FEE : 0;
@@ -224,7 +225,7 @@
             if (cardBox) { cardBox.hidden = !isCard; if (isCard) replayIn(cardBox); }
             if (gcBox) { gcBox.hidden = !isGc; if (isGc) replayIn(gcBox); }
             [cardName, cardNum, cardExp, cardCvc].forEach(function (f) { if (f) f.required = isCard; });
-            [gcName, gcNum, gcPin].forEach(function (f) { if (f) f.required = isGc; });
+            [gcName, gcNum].forEach(function (f) { if (f) f.required = isGc; });
             if (!isCard) setMsg(cardMsg, '');
             if (!isGc) setMsg(gcMsg, '');
         };
@@ -272,13 +273,37 @@
             this.classList.remove('invalid');
         });
         if (gcNum) gcNum.addEventListener('input', function () {
-            this.value = digits(this.value).slice(0, 11);
+            var d = digits(this.value).slice(0, 11);
+            this.value = d.length > 7 ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : d.length > 4 ? d.slice(0, 4) + ' ' + d.slice(4) : d;
             this.classList.remove('invalid');
         });
-        if (gcPin) gcPin.addEventListener('input', function () {
-            this.value = digits(this.value).slice(0, 6);
-            this.classList.remove('invalid');
-        });
+        /* GCash receipt photo: downscaled on the spot and stored with the order */
+        if (gcPick && gcFile) {
+            gcPick.addEventListener('click', function () { gcFile.click(); });
+            gcFile.addEventListener('change', function () {
+                var f = gcFile.files && gcFile.files[0];
+                gcShot = ''; gcPrev.classList.remove('invalid'); gcPrev.style.backgroundImage = '';
+                if (!f) { gcFn.textContent = 'No receipt uploaded'; return; }
+                if (!/^image\//.test(f.type)) { setMsg(gcMsg, 'Upload a photo of your GCash receipt (JPG or PNG).', 'err'); gcFile.value = ''; return; }
+                var rd = new FileReader();
+                rd.onload = function () {
+                    var img = new Image();
+                    img.onload = function () {
+                        var w = img.width, h = img.height, max = 600;
+                        if (Math.max(w, h) > max) { var r = max / Math.max(w, h); w = Math.round(w * r); h = Math.round(h * r); }
+                        var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        gcShot = cv.toDataURL('image/webp', 0.85);
+                        gcPrev.style.backgroundImage = 'url(' + gcShot + ')';
+                        gcFn.textContent = f.name.length > 24 ? f.name.slice(0, 21) + '...' : f.name;
+                        setMsg(gcMsg, '');
+                    };
+                    img.onerror = function () { setMsg(gcMsg, 'That photo could not be read. Try another one.', 'err'); };
+                    img.src = rd.result;
+                };
+                rd.readAsDataURL(f);
+            });
+        }
         if (gcName) gcName.addEventListener('input', function () {
             var pos = this.selectionStart, v = capWords(this.value);
             this.value = v; this.setSelectionRange(pos, pos);
@@ -314,22 +339,23 @@
         /* GCash payment flow */
         var handleGcashPayment = function (amount, items) {
             return new Promise(function (resolve, reject) {
+                [gcName, gcNum].forEach(function (f) { if (f) f.classList.remove('invalid'); });
+                gcPrev.classList.remove('invalid');
                 var bad = [];
-                [gcName, gcNum, gcPin].forEach(function (f) { f.classList.remove('invalid'); });
                 if (!gcName.value.trim()) bad.push(gcName);
                 if (!/^09\d{9}$/.test(digits(gcNum.value))) bad.push(gcNum);
-                if (!/^\d{4,6}$/.test(digits(gcPin.value))) bad.push(gcPin);
-                if (bad.length) {
+                if (!gcShot) gcPrev.classList.add('invalid');
+                if (bad.length || !gcShot) {
                     bad.forEach(function (f) { f.classList.add('invalid'); });
-                    setMsg(gcMsg, 'Enter a valid GCash name, 11-digit number (09…), and MPIN.', 'err');
-                    bad[0].focus();
+                    setMsg(gcMsg, !gcShot ? 'Upload a photo of your GCash receipt to continue.' : 'Enter the GCash account name and an 11-digit number starting with 09.', 'err');
+                    (bad[0] || gcPick).focus();
                     reject(new Error('invalid'));
                     return;
                 }
-                setMsg(gcMsg, 'Sending GCash request...', 'busy');
-                waitPay(800).then(function () {
-                    setMsg(gcMsg, 'GCash payment approved.', 'ok');
-                    resolve({ kind: 'gcash', amount: amount, items: items });
+                setMsg(gcMsg, 'Checking your GCash receipt...', 'busy');
+                waitPay(900).then(function () {
+                    setMsg(gcMsg, 'GCash receipt received.', 'ok');
+                    resolve({ kind: 'gcash', amount: amount, items: items, receipt: gcShot });
                 });
             });
         };
@@ -359,7 +385,7 @@
                 badOnes.forEach(function (f) { f.classList.add('invalid'); });
                 badOnes[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); badOnes[0].focus({ preventScroll: true }); return;
             }
-            var finish = function () {
+            var finish = function (proof) {
                 if (stockProblem(c).length) { place.classList.remove('paying'); SH.toast('Stock changed before your order could be placed. Return to your cart and update it.'); return; }
                 var t = totals(), L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', id = '';
                 for (var k = 0; k < 7; k++) id += L[Math.floor(Math.random() * 26)];
@@ -368,7 +394,7 @@
                 SH.saveStock(st);
                 SH.ensureOrderTags();
                 var orders = S.get('sh_orders', []);
-                orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value, paid: method.value !== 'cash', riderLocation: '',
+                orders.push({ id: id, name: SH.user().name, mode: mode, addr: mode === 'Delivery' ? addr.value.trim() : 'Pick up at the shop', pay: payLabels[method.value] || method.value, paid: method.value !== 'cash', proof: (proof && proof.receipt) || '', riderLocation: '',
                     items: c.map(function (i) { return { name: i.name, tag: SH.nextOrderTag(i.name), qty: i.qty, price: i.price, img: i.img }; }), sub: t.sub, fee: t.fee, total: t.tot, status: 'Pending', date: new Date().toISOString(),
                     readyAt: etaFor(c, mode).ready.toISOString(), arriveAt: etaFor(c, mode).arrive ? etaFor(c, mode).arrive.toISOString() : null });
                 S.set('sh_orders', orders); S.set('sh_last', id); SH.saveCart([]);
@@ -378,9 +404,9 @@
             if (pay === 'credit' || pay === 'gcash') {
                 place.classList.add('paying');
                 var run = pay === 'credit' ? handleCardPayment(totals().tot, c) : handleGcashPayment(totals().tot, c);
-                run.then(function () {
+                run.then(function (res) {
                     place.classList.remove('paying');
-                    finish();
+                    finish(res);
                 }).catch(function () { place.classList.remove('paying'); });
                 return;
             }
@@ -445,9 +471,16 @@
                 return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
             }).join('');
             var rider = o.mode === 'Delivery' && (o.status === 'Ready' || o.status === 'Pick Up') ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
+            var note = '';
+            if (gone) {
+                note = '<p class="oc_note">Reason: <b>' + esc(o.cancelReason || 'Not stated') + '</b>';
+                if (o.refundStatus === 'Requested') note += ' &middot; Refund requested, reference ' + esc((o.refund && o.refund.reference) || '') + '.';
+                else if (o.refundStatus === 'No refund') note += ' &middot; No refund: cash is paid on delivery, so nothing was charged.';
+                note += '</p>';
+            }
             var cancel = o.status === 'Pending' ? '<button type="button" class="oc_cancel" data-cancel="' + esc(o.id) + '">Cancel Order</button>' : '';
             return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(SH.orderTagLabel(o)) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
-                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + track + eta + rider + lines +
+                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + note + track + eta + rider + lines +
                 '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
                 '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' + cancel + '</div></div></div>';
         };
@@ -500,6 +533,140 @@
             });
             requestAnimationFrame(function () { requestAnimationFrame(function () { $$('.track_fill', mo).forEach(function (f) { f.style.width = f.getAttribute('data-w'); }); }); });
         };
+        /* ---------- CANCEL ORDER: one reason + the refund details of the payment that was used ---------- */
+        var payKind = function (o) {
+            var p = String(o.pay || '').toLowerCase();
+            return /gcash/.test(p) ? 'gcash' : /cash/.test(p) ? 'cash' : 'card';
+        };
+        var PAY_NAME = { cash: 'Cash on Delivery', gcash: 'GCash', card: 'Credit/Debit Card' };
+        var REASONS = ['Changed my mind', 'Ordered by mistake', 'Wrong item or quantity', 'Found the same item somewhere else', 'Delivery takes too long', 'Wrong delivery details', 'Other reason'];
+        var ccPaid = function (o) { return o.paid === true || (o.paid == null && payKind(o) !== 'cash'); };
+
+        var cc = document.createElement('div');
+        cc.id = 'cancel_modal';
+        cc.innerHTML = '<div class="cc_card" role="dialog" aria-modal="true" aria-labelledby="cc_title">' +
+            '<p class="cc_title" id="cc_title">Cancel this order?</p>' +
+            '<p class="cc_sub" id="cc_sub"></p>' +
+            '<p class="cc_pay" id="cc_pay"></p>' +
+            '<label class="cc_label" for="cc_reason">Reason for cancelling</label>' +
+            '<select class="cc_sel" id="cc_reason"><option value="">Choose one reason</option>' +
+            REASONS.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select>' +
+            '<div id="cc_other_box" hidden><label class="cc_label" for="cc_other">Your reason</label>' +
+            '<input class="cc_in" id="cc_other" maxlength="90" placeholder="Type your reason"></div>' +
+            '<div id="cc_refund" hidden><p class="cc_rf_t">Refund details</p>' +
+            '<p class="cc_rf_s">This order was already paid, so the refund needs the reference number and a photo of the receipt.</p>' +
+            '<label class="cc_label" for="cc_ref">Reference number</label>' +
+            '<input class="cc_in" id="cc_ref" maxlength="24" placeholder="Reference number on your receipt">' +
+            '<label class="cc_label" for="cc_file">Receipt</label>' +
+            '<div class="photo_row"><div class="photo_prev cc_prev" id="cc_prev"></div><input type="file" id="cc_file" accept="image/*">' +
+            '<button type="button" class="btn_dark cc_pick" id="cc_pick">Upload receipt</button><span class="cc_fn" id="cc_fn">No receipt uploaded</span></div></div>' +
+            '<p class="cc_msg" id="cc_msg"></p>' +
+            '<div class="cc_btns"><button type="button" class="cc_keep" id="cc_keep">Keep order</button>' +
+            '<button type="button" class="cc_go" id="cc_cancel">Cancel order</button></div></div>';
+        document.body.appendChild(cc);
+
+        var ccOrder = null, ccShot = '';
+        var ccEl = function (id) { return cc.querySelector('#' + id); };
+        var ccSay = function (t, bad) { var m = ccEl('cc_msg'); m.textContent = t || ''; m.className = 'cc_msg' + (bad ? ' err' : ''); };
+        var ccClose = function () {
+            cc.classList.remove('on'); ccOrder = null; ccShot = '';
+            ccEl('cc_prev').style.backgroundImage = ''; ccEl('cc_prev').classList.remove('invalid');
+            ccEl('cc_fn').textContent = 'No receipt uploaded'; ccEl('cc_file').value = '';
+            ccEl('cc_reason').classList.remove('invalid'); ccEl('cc_other').classList.remove('invalid'); ccEl('cc_ref').classList.remove('invalid');
+            ccSay('');
+        };
+        var openCancel = function (o) {
+            ccOrder = o;
+            var kind = payKind(o), paid = ccPaid(o), needs = paid && kind !== 'cash';
+            ccEl('cc_sub').textContent = 'Order #' + SH.orderTagLabel(o) + ' - ' + o.mode;
+            /* the system reads the payment method from the order itself */
+            ccEl('cc_pay').innerHTML = 'Payment method: <b>' + PAY_NAME[kind] + '</b> - ' + (paid ? 'already paid' : 'not paid yet');
+            ccEl('cc_refund').hidden = !needs;
+            ccEl('cc_reason').value = ''; ccEl('cc_other').value = ''; ccEl('cc_other_box').hidden = true;
+            ccEl('cc_ref').value = ''; ccEl('cc_ref').classList.remove('invalid');
+            ccEl('cc_prev').classList.remove('invalid'); ccEl('cc_prev').style.backgroundImage = '';
+            ccShot = ''; ccEl('cc_fn').textContent = 'No receipt uploaded'; ccEl('cc_file').value = '';
+            ccSay('');
+            if (!paid) ccSay('No refund will be made: cash is only collected on delivery, so this order was not charged.');
+            cc.classList.add('on');
+            ccEl('cc_reason').focus();
+        };
+        ccEl('cc_keep').addEventListener('click', function () { ccClose(); drawOrders(true); });
+        cc.addEventListener('click', function (e) { if (e.target === cc) ccClose(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && cc.classList.contains('on')) ccClose(); });
+        ccEl('cc_reason').addEventListener('change', function () {
+            ccEl('cc_reason').classList.remove('invalid');
+            ccEl('cc_other_box').hidden = this.value !== 'Other reason';
+            if (this.value !== 'Other reason') ccEl('cc_other').value = '';
+            ccSay(ccEl('cc_refund').hidden && ccOrder && !ccPaid(ccOrder) ? 'No refund will be made: cash is only collected on delivery, so this order was not charged.' : '');
+        });
+        ccEl('cc_other').addEventListener('input', function () { ccEl('cc_other').classList.remove('invalid'); });
+        ccEl('cc_ref').addEventListener('input', function () { ccEl('cc_ref').classList.remove('invalid'); });
+        ccEl('cc_pick').addEventListener('click', function () { ccEl('cc_file').click(); });
+        ccEl('cc_file').addEventListener('change', function () {
+            var f = this.files && this.files[0];
+            ccShot = ''; ccEl('cc_prev').classList.remove('invalid'); ccEl('cc_prev').style.backgroundImage = '';
+            if (!f) { ccEl('cc_fn').textContent = 'No receipt uploaded'; return; }
+            if (!/^image\//.test(f.type)) { ccSay('Upload a photo of the receipt (JPG or PNG).', true); this.value = ''; return; }
+            var rd = new FileReader();
+            rd.onload = function () {
+                var img = new Image();
+                img.onload = function () {
+                    var w = img.width, h = img.height, max = 600;
+                    if (Math.max(w, h) > max) { var r = max / Math.max(w, h); w = Math.round(w * r); h = Math.round(h * r); }
+                    var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+                    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                    ccShot = cv.toDataURL('image/webp', 0.85);
+                    ccEl('cc_prev').style.backgroundImage = 'url(' + ccShot + ')';
+                    ccEl('cc_fn').textContent = f.name.length > 24 ? f.name.slice(0, 21) + '...' : f.name;
+                    ccSay('');
+                };
+                img.onerror = function () { ccSay('That receipt could not be read. Try another one.', true); };
+                img.src = rd.result;
+            };
+            rd.readAsDataURL(f);
+        });
+        ccEl('cc_cancel').addEventListener('click', function () {
+            if (!ccOrder) return;
+            var reason = ccEl('cc_reason').value.trim(), other = ccEl('cc_other').value.trim();
+            var needs = !ccEl('cc_refund').hidden, ref = ccEl('cc_ref').value.trim();
+            if (!reason) { ccEl('cc_reason').classList.add('invalid'); ccSay('Choose one reason for cancelling the order.', true); ccEl('cc_reason').focus(); return; }
+            if (reason === 'Other reason' && !other) { ccEl('cc_other').classList.add('invalid'); ccSay('Type your reason.', true); ccEl('cc_other').focus(); return; }
+            if (needs && !ref) { ccEl('cc_ref').classList.add('invalid'); ccSay('Type the reference number of your payment.', true); ccEl('cc_ref').focus(); return; }
+            if (needs && !ccShot) { ccEl('cc_prev').classList.add('invalid'); ccSay('Upload the receipt of your payment.', true); ccEl('cc_pick').focus(); return; }
+            var list = S.get('sh_orders', []);
+            var target = list.filter(function (o) { return String(o.id) === String(ccOrder.id) && SH.norm(o.name) === SH.norm(SH.user().name); })[0];
+            if (!target || target.sample || target.status !== 'Pending') { ccClose(); SH.toast('This order can no longer be cancelled.'); drawOrders(true); return; }
+            var kind = payKind(target), full = reason === 'Other reason' ? other : reason, reqId = 'rf' + Date.now();
+            /* the refund record is saved first: if the receipt cannot be stored, the order stays as it is */
+            if (needs) {
+                var reqs = S.get('sh_refunds', []);
+                reqs.push({ id: reqId, orderId: target.id, itemIndex: null,
+                    product: target.items.map(function (i) { return i.name; }).join(', '), userName: target.name,
+                    reason: full, details: '', reference: ref, method: PAY_NAME[kind], kind: 'Order cancellation',
+                    evidence: [{ name: 'receipt.webp', type: 'image/webp', data: ccShot }], status: 'Requested', date: new Date().toISOString() });
+                S.set('sh_refunds', reqs);
+                var kept = S.get('sh_refunds', []).some(function (x) { return x.id === reqId; });
+                if (!kept) { ccSay('The receipt is too large to save. Upload a smaller photo.', true); return; }
+            }
+            var stockLeft = SH.stock();
+            target.items.forEach(function (item) { stockLeft[item.name] = (stockLeft[item.name] || 0) + item.qty; });
+            SH.saveStock(stockLeft);
+            target.status = 'Cancelled';
+            target.cancelReason = full;
+            target.cancelDate = new Date().toISOString();
+            if (needs) {
+                target.refundStatus = 'Requested';
+                target.refund = { id: reqId, status: 'Requested', method: PAY_NAME[kind], reference: ref, date: new Date().toISOString() };
+            } else {
+                target.refundStatus = 'No refund';
+            }
+            S.set('sh_orders', list);
+            ccClose();
+            SH.toast('Order #' + SH.orderTagLabel(target) + ' was cancelled.' + (needs ? ' Refund requested.' : ' No refund needed.'));
+            drawOrders(true);
+        });
+
         mo.addEventListener('click', function (e) {
             var tb = e.target.closest('[data-tab]'), rc = e.target.closest('.oc_rc'), ag = e.target.closest('[data-again]');
             if (tb) { tab = tb.getAttribute('data-tab'); drawOrders(true); return; }
@@ -508,11 +675,7 @@
             if (cancel) {
                 var cancelList = S.get('sh_orders', []), target = cancelList.filter(function (o) { return String(o.id) === cancel.getAttribute('data-cancel') && SH.norm(o.name) === SH.norm(SH.user().name); })[0];
                 if (!target || target.sample || target.status !== 'Pending') { SH.toast('This order can no longer be cancelled.'); drawOrders(true); return; }
-                if (!confirm('Cancel this order?')) return;
-                var cancelStock = SH.stock();
-                target.items.forEach(function (item) { cancelStock[item.name] = (cancelStock[item.name] || 0) + item.qty; });
-                target.status = 'Cancelled'; S.set('sh_orders', cancelList); SH.saveStock(cancelStock);
-                SH.toast('Order #' + SH.orderTagLabel(target) + ' was cancelled.'); drawOrders(true); return;
+                openCancel(target); return;
             }
             var star = e.target.closest('.quick_rating [data-value]');
             if (star) {

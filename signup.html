@@ -21,15 +21,15 @@
         <!-- form container -->
         <div class="form_cont">
         <p class="form_header">Create your account to start ordering your favorite treats.</p>
-        <form id="signup_form">
+        <form id="signup_form" novalidate>
 
             <!-- First name field -->
             <label for="f_name">First Name</label><br>
-            <input type="text" id="f_name" name="f_name" placeholder="First Name"required><br>
+            <input type="text" id="f_name" name="f_name" placeholder="First Name" required><br>
 
             <!-- Last name field -->
             <label for="l_name">Last Name</label><br>
-            <input type="text" id="l_name" name="l_name" placeholder="Last Name"required><br><br>
+            <input type="text" id="l_name" name="l_name" placeholder="Last Name" required><br><br>
 
             <!-- Password fields -->
             <label for="c_password">Create Password</label><br>
@@ -39,11 +39,11 @@
 
             <!-- age field -->
             <label for="age">Age</label><br>
-            <input type="number" id="age" name="age" placeholder="20" required><br><br>
+            <input type="number" id="age" name="age" placeholder="Age" min="1" max="120" inputmode="numeric" required><br><br>
 
             <!-- sex field -->
             <label for="sex">Sex</label><br>
-            <input list="sex" name="sex" placeholder=" " required><br><br>
+            <input list="sex" id="sex" name="sex" placeholder="Sex" required><br><br>
             <datalist id="sex">
                 <option value="Male">
                 <option value="Female">
@@ -54,33 +54,67 @@
             <label for="email">Gmail</label><br>
             <input type="text" id="email" name="email" placeholder="example@gmail.com" required><br><br>
 
-            <!-- contact number field (numbers only) -->
+            <!-- contact number field (09XX XXX XXXX) -->
             <label for="contact">Contact Number</label><br>
-            <input type="text" id="contact" name="contact" inputmode="numeric" maxlength="11" placeholder="09123456789" required><br><br>
+            <input type="text" id="contact" name="contact" inputmode="numeric" maxlength="13" placeholder="09XX XXX XXXX" required><br><br>
 
             <!-- Full address fields -->
             <label for="address">Address (House/Unit No. and Street)</label><br>
             <input type="text" id="address" name="address" placeholder="1234 Kalye Street" required><br>
-            
+
             <label for="region">Region</label><br>
-            <input type="text" id="region" name="region" placeholder="NCR" required><br>
-            
+            <select id="region" name="region" required>
+                <option value="">Choose your region</option>
+                <option>NCR</option>
+                <option>CAR</option>
+                <option>Region I</option>
+                <option>Region II</option>
+                <option>Region III</option>
+                <option>Region IV-A</option>
+                <option>MIMAROPA</option>
+                <option>Region V</option>
+                <option>Region VI</option>
+                <option>Region VII</option>
+                <option>Region VIII</option>
+                <option>Region IX</option>
+                <option>Region X</option>
+                <option>Region XI</option>
+                <option>Region XII</option>
+                <option>Region XIII</option>
+                <option>BARMM</option>
+            </select><br>
+
             <label for="city">City/Municipality</label><br>
             <input type="text" id="city" name="city" placeholder="Manila" required><br>
-            
+
             <label for="brgy">Barangay</label><br>
             <input type="text" id="brgy" name="brgy" placeholder="Barangay Name" required><br>
-            
+
             <label for="zip">Zip Code</label><br>
-            <input type="text" id="zip" name="zip" placeholder="****" required><br>
-            
+            <input type="text" id="zip" name="zip" inputmode="numeric" maxlength="4" placeholder="****" required><br>
+
             <label for="landmark">Landmark/Delivery Notes</label><br>
             <input type="text" id="landmark" name="landmark" placeholder=" "><br><br>
-            
+
+            <!-- Security question used by Forgot Password -->
+            <label for="sec_q">Security Question</label><br>
+            <select id="sec_q" name="sec_q" required>
+                <option value="">Choose a security question</option>
+                <option>What is your mother's maiden name?</option>
+                <option>What was the name of your first pet?</option>
+                <option>What city were you born in?</option>
+                <option>What is your favorite cookie flavor?</option>
+            </select><br>
+
+            <label for="sec_a">Your Answer</label><br>
+            <input type="text" id="sec_a" name="sec_a" placeholder="Your Answer" autocomplete="off" required><br><br>
+
             <!-- Temporary Go to Homepage nav -->
             <button type="submit" id="login_btn"><a href="home_page.html">Sign Up</a></button>
-            <p>Already have an account? <a id="login_button" href="login.html">Create Account</a></p>
+            <p>Already have an account? <a id="login_button" href="login.html">Log In</a></p>
         </form>
         </div>
         <script src="site.js"></script>
         <script src="auth.js"></script>
+    </body>
+</html>
