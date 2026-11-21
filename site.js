@@ -204,8 +204,121 @@
     }
     function logout() { S.set('sh_user', null); S.set('sh_cart', []); S.set('sh_remember', null); location.href = 'login.html'; }
 
+    /* ---- password creating: strength meter + the rule checklist (design reference) ---- */
+    var PW_RULES = [
+        { k: 'len', label: '8 Chars', test: function (v) { return v.length >= 8; } },
+        { k: 'upper', label: 'A-Z', test: function (v) { return /[A-Z]/.test(v); } },
+        { k: 'lower', label: 'a-z', test: function (v) { return /[a-z]/.test(v); } },
+        { k: 'num', label: '123', test: function (v) { return /[0-9]/.test(v); } },
+        { k: 'sym', label: '@#$', test: function (v) { return /[^A-Za-z0-9]/.test(v); } }
+    ];
+    function pwChecks(v) {
+        v = String(v || '');
+        var n = 0;
+        PW_RULES.forEach(function (r) { if (r.test(v)) n++; });
+        return { n: n, total: PW_RULES.length, ok: n === PW_RULES.length };
+    }
+    function passwordUI(input) {
+        if (!input || input.getAttribute('data-pw-ui')) return;
+        var isConfirm = /confirm/i.test(input.id || '');
+        var main = isConfirm ? $('#' + (input.id === 'confirm_password' ? 'c_password' : 'reset_password')) : input;
+        if (!main) return;
+        input.setAttribute('data-pw-ui', '1');
+        var box = document.createElement('div');
+        box.className = 'pw_meter';
+        if (isConfirm) {
+            box.innerHTML = '<p class="pw_match"><span></span></p>';
+        } else {
+            box.innerHTML = '<div class="pw_bar"><i></i></div>' +
+                '<p class="pw_strength"><span>Password strength</span><b>Weak</b></p>' +
+                '<ul class="pw_rules">' + PW_RULES.map(function (r) { return '<li data-r="' + r.k + '">' + r.label + '</li>'; }).join('') + '</ul>';
+        }
+        var field = input.closest('.field');
+        if (field) {
+            var hint = field.querySelector('.fhint');
+            if (hint) field.insertBefore(box, hint); else field.appendChild(box);
+        } else {
+            (input.closest('.pw_wrap') || input).insertAdjacentElement('afterend', box);
+        }
+        var paint = function () {
+            if (isConfirm) {
+                var typed = input.value, match = box.querySelector('.pw_match');
+                if (!typed) { match.querySelector('span').textContent = ''; match.className = 'pw_match'; }
+                else if (typed === main.value) { match.querySelector('span').textContent = 'Passwords match.'; match.className = 'pw_match ok'; }
+                else { match.querySelector('span').textContent = 'Passwords do not match yet.'; match.className = 'pw_match bad'; }
+                return;
+            }
+            var v = input.value, c = pwChecks(v), bar = box.querySelector('.pw_bar i');
+            var lvl = c.n >= 5 ? 'strong' : c.n >= 3 ? 'mid' : 'weak';
+            bar.className = v ? lvl : '';
+            bar.style.width = (v ? Math.max(Math.round(c.n / c.total * 100), 8) : 0) + '%';
+            box.querySelector('.pw_strength').className = 'pw_strength ' + (v ? lvl : '');
+            box.querySelector('.pw_strength b').textContent = !v ? 'Weak' : lvl === 'strong' ? 'Strong' : lvl === 'mid' ? 'Medium' : 'Weak';
+            $$('.pw_rules li', box).forEach(function (li) {
+                var rule = PW_RULES.filter(function (r) { return r.k === li.getAttribute('data-r'); })[0];
+                li.className = rule && rule.test(v) ? 'ok' : '';
+            });
+        };
+        input.addEventListener('input', paint);
+        input.addEventListener('focus', paint);
+        main.addEventListener('input', paint);
+        paint();
+    }
+
+    /* ---- upload button: turns into "Uploaded" with a tick and the size that was read ---- */
+    function readSize(bytes) {
+        bytes = Number(bytes) || 0;
+        if (bytes < 1024) return bytes + ' B read';
+        if (bytes < 1048576) return Math.max(1, Math.round(bytes / 1024)) + ' KB read';
+        return (bytes / 1048576).toFixed(1) + ' MB read';
+    }
+    function uploadReset(input) {
+        var row = input && input.closest ? input.closest('.photo_row') : null;
+        if (!row) return;
+        var btn = row.querySelector('button'), info = row.querySelector('.up_size');
+        if (btn && btn.getAttribute('data-up-label') != null) { btn.classList.remove('is-uploaded'); btn.innerHTML = btn.getAttribute('data-up-label'); }
+        if (info) { info.textContent = info.getAttribute('data-up-empty') || ''; info.classList.remove('on'); }
+    }
+    function uploadInit(row) {
+        var input = row.querySelector('input[type="file"]');
+        if (!input || input.getAttribute('data-up')) return;
+        input.setAttribute('data-up', '1');
+        var btn = row.querySelector('button');
+        if (btn) {
+            btn.classList.add('up_btn');
+            btn.setAttribute('data-up-label', btn.innerHTML);
+            if (btn.getAttribute('data-pick') === 'self') btn.addEventListener('click', function () { input.click(); });
+        }
+        var info = row.querySelector('.up_size') || row.querySelector('[id$="_fn"]') || row.querySelector('.cc_fn');
+        if (info) {
+            info.classList.add('up_size');
+            info.setAttribute('data-up-empty', info.textContent);
+        }
+        var prev = row.querySelector('.photo_prev');
+        input.addEventListener('change', function () {
+            var files = input.files || [], total = 0;
+            for (var i = 0; i < files.length; i++) total += files[i].size;
+            if (!files.length) { uploadReset(input); return; }
+            if (btn) {
+                btn.classList.add('is-uploaded');
+                btn.innerHTML = '<span class="up_txt">Uploaded</span><span class="up_tick" aria-hidden="true">&#10003;</span>';
+            }
+            if (info) {
+                info.textContent = (files.length > 1 ? files.length + ' files - ' : '') + readSize(total);
+                info.classList.add('on');
+            }
+            if (prev && /^image\//.test(files[0].type) && !prev.style.backgroundImage) {
+                var rd = new FileReader();
+                rd.onload = function () { prev.style.backgroundImage = 'url(' + rd.result + ')'; };
+                rd.readAsDataURL(files[0]);
+            }
+        });
+    }
+    onReady(function () { $$('.photo_row[data-upload]').forEach(uploadInit); });
+
     window.SH = { cartToast: cartToast, animateCartButton: animateCartButton, loginModal: loginModal, warningCard: warningCard, wishList: wishList, inWish: inWish, toggleWish: toggleWish, HEART: HEART, eyeify: eyeify, catalog: catalog, S: S, $: $, $$: $$, norm: norm, esc: esc, fmt: fmt, CATALOG: CATALOG, find: find, user: user, cart: cart,
-        saveCart: saveCart, stock: stock, stockCount: stockCount, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout, ensureOrderTags: ensureOrderTags, nextOrderTag: nextOrderTag, orderTagLabel: orderTagLabel };
+        saveCart: saveCart, stock: stock, stockCount: stockCount, saveStock: saveStock, toast: toast, needLogin: needLogin, logout: logout, ensureOrderTags: ensureOrderTags, nextOrderTag: nextOrderTag, orderTagLabel: orderTagLabel,
+        pwChecks: pwChecks, passwordUI: passwordUI, uploadReset: uploadReset };
     window.goBack = function () { if (window.history.length > 1) window.history.back(); else location.href = 'home_page.html'; };
 
     /* ---- light / dark mode button ---- */
@@ -227,9 +340,17 @@
     /* Add back button to header if not already present */
     /* the admin dashboard and the customer home page already have Log Out, so no back icon there */
     var NO_BACK = ['dashboard.html', 'home_page.html', 'index.html'];
-    var herePage = location.pathname.split('/').pop();
+    var herePage = location.pathname.split('/').pop() || 'home_page.html';
+    /* the pages visited in this tab, so Back never returns a signed-in user to log in / sign up / the start page */
+    var BLOCK_BACK = ['index.html', 'login.html', 'signup.html', 'forgot_password.html'];
+    var trail = [];
+    try { trail = JSON.parse(sessionStorage.getItem('sh_trail') || '[]'); if (!Array.isArray(trail)) trail = []; } catch (e) { trail = []; }
+    if (trail[trail.length - 1] !== herePage) trail.push(herePage);
+    if (trail.length > 24) trail = trail.slice(-24);
+    try { sessionStorage.setItem('sh_trail', JSON.stringify(trail)); } catch (e) {}
     var header = document.querySelector('header');
-    if (header && !$('#back_btn') && NO_BACK.indexOf(herePage) < 0) {
+    /* visitors who are not logged in get no Back button on any page */
+    if (header && u && !$('#back_btn') && NO_BACK.indexOf(herePage) < 0) {
         var titleCont = $('#h_title-cont');
         if (titleCont) {
             var backBtn = document.createElement('button');
@@ -237,14 +358,13 @@
             backBtn.id = 'back_btn';
             backBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> Back';
             backBtn.onclick = function () {
-            var p = location.pathname.split('/').pop();
-            if (p === 'login.html' || p === 'signup.html' || p === 'forgot_password.html') {
-                location.href = 'index.html';
-            } else if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                location.href = 'home_page.html';
-            }
+                var to = '', history = trail.slice(0, -1);
+                for (var i = history.length - 1; i >= 0; i--) {
+                    if (BLOCK_BACK.indexOf(history[i]) < 0) { to = history[i]; trail = history.slice(0, i + 1); break; }
+                }
+                try { sessionStorage.setItem('sh_trail', JSON.stringify(trail)); } catch (e) {}
+                if (to && to !== herePage) location.href = to;
+                else location.href = u.role === 'admin' ? 'dashboard.html' : 'home_page.html';
             };
             titleCont.insertBefore(backBtn, titleCont.firstChild);
         }
@@ -455,6 +575,14 @@
         if ($('#login_form') || $('#signup_form')) return;
         $$('input[type="password"]').forEach(function (i) {
             var w = document.createElement('span'); w.className = 'pw_wrap'; i.parentNode.insertBefore(w, i); w.appendChild(i); eyeify(i, w);
+        });
+    });
+
+    /* ---- strength meter + checklist for every password that is created or confirmed (never on log in) ---- */
+    onReady(function () {
+        $$('.form_cont form input[type="password"]').forEach(function (i) {
+            if (i.closest('#login_form')) return;
+            passwordUI(i);
         });
     });
 

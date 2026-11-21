@@ -179,12 +179,20 @@ a{
     right: 0;
     width: 65%;
     height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
 }
 #card2_text, .card-text-cont2{
     position: absolute;
     left: 10%;
     width: 65%;
     height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
 }
 #card1_h, .card-header{
     font-family: lemon;
@@ -276,6 +284,13 @@ a.nav1.here::after{ width:100%; }
 }
 .card-header{ font-style:italic; }
 .button-cont{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* ---------- one text/button rhythm for every product card (taken from the Red Velvet card) ---------- */
+#card1_text > *, .card-text-cont > *, #card2_text > *, .card-text-cont2 > *{ margin-top:0; margin-bottom:0; }
+.card-text-cont .card-notif, .card-text-cont2 .card-notif{ margin:0; }
+.card-text-cont .card-header, .card-text-cont2 .card-header{ font-size:24px; line-height:1.2; margin:20px 0 0; }
+.card-text-cont .card-p, .card-text-cont2 .card-p{ margin:18px 0 0; }
+.card-text-cont .button-cont, .card-text-cont2 .button-cont{ margin:16px 0 0; }
 .product-card[style*="rgb(161, 93, 36)"] .card-header, .product-card[style*="rgb(161, 93, 36)"] .card-p,
 .product-card[style*="rgb(206, 163, 134)"] .card-header, .product-card[style*="rgb(206, 163, 134)"] .card-p{ color:#000; }
 .product-card{ transition:transform .3s; }
@@ -721,6 +736,7 @@ a.nav1.lit{ color:#fff; }
     .card-text-cont, .card-text-cont2{ padding:0 16px; }
     .card-p{ width:100%; }
     .card-notif{ margin:0 auto; }
+    .card-text-cont .card-notif, .card-text-cont2 .card-notif{ margin:0 auto; }
     .button-cont{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
     .info-btn, .order-btn, .cart-btn{ margin-right:0; }
     footer{ height:auto; flex-direction:column; gap:6px; padding:14px 8px; text-align:center; }
@@ -1050,3 +1066,31 @@ main:has(> form:first-of-type) > h1{ max-width:720px; margin-left:auto; margin-r
     main > div, main > form, main > table{ padding:14px 14px; border-radius:20px; }
     main form > button[type="submit"]{ width:100%; }
 }
+
+/* ---------- password creating: strength meter + rule checklist ---------- */
+.pw_meter{ margin:10px 0 4px; padding:0 2px; }
+.pw_bar{ height:8px; border-radius:8px; background:var(--field); border:1px solid var(--bord); overflow:hidden; }
+.pw_bar i{ display:block; height:100%; width:0; border-radius:8px; background:var(--mar); transition:width .25s ease, background .25s ease; }
+.pw_bar i.weak{ background:var(--err); }
+.pw_bar i.mid{ background:var(--pk2); }
+.pw_bar i.strong{ background:var(--mar); }
+.form_cont form .pw_strength{ display:flex; justify-content:space-between; align-items:center; margin:7px 0 8px; text-align:left; font:700 13px var(--ari); color:var(--ph); }
+.form_cont form .pw_strength b{ font:700 13px var(--ari); color:var(--ph); }
+.form_cont form .pw_strength.weak b{ color:var(--err); }
+.form_cont form .pw_strength.mid b{ color:var(--pk2); }
+.form_cont form .pw_strength.strong b{ color:var(--mar); }
+.pw_rules{ display:flex; flex-wrap:wrap; gap:6px 14px; list-style:none; margin:0; padding:0; }
+.pw_rules li{ display:inline-flex; align-items:center; gap:5px; font:13px var(--ari); color:var(--ph); }
+.pw_rules li::before{ content:"\2713"; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:10px; line-height:1; opacity:.55; }
+.pw_rules li.ok{ color:var(--mar); }
+.pw_rules li.ok::before{ background:var(--mar); border-color:var(--mar); color:#fff; opacity:1; }
+.form_cont form .pw_match{ min-height:16px; margin:8px 0 0; text-align:left; font:13px var(--ari); color:var(--ph); }
+.form_cont form .pw_match.ok{ color:var(--mar); font-weight:700; }
+.form_cont form .pw_match.bad{ color:var(--err); font-weight:700; }
+
+/* ---------- upload button: upload -> Uploaded + the size that was read ---------- */
+.photo_row[data-upload] .up_btn{ display:inline-flex; align-items:center; gap:10px; transition:background .25s, border-color .25s, color .25s, transform .15s; }
+.photo_row[data-upload] .up_btn.is-uploaded{ background:var(--mar); border-color:var(--mar); color:var(--btntx); cursor:default; transform:none; }
+.photo_row[data-upload] .up_tick{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--card); color:var(--mar); font:700 15px/1 var(--ari); animation:cartCheckPop .38s cubic-bezier(.2,.8,.2,1) both; }
+.up_size{ font:14px var(--ari); color:var(--ph); }
+.up_size.on{ color:var(--mar); font-weight:700; }

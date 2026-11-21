@@ -181,7 +181,7 @@
         forgot.addEventListener('submit', function (e) {
             e.preventDefault();
             if (!otp || !otp.ok) { say('Verify the one-time code before changing the password.', true); return; }
-            if (pwIn.value.length < 6) { say('Use at least 6 characters for the new password.', true); pwIn.focus(); return; }
+            if (!SH.pwChecks(pwIn.value).ok) { say('Use 8+ characters with A-Z, a-z, 0-9 and a symbol.', true); pwIn.focus(); return; }
             if (pwIn.value !== cfIn.value) { say('The passwords do not match.', true); cfIn.focus(); return; }
             var users = S.get('sh_users', []);
             var live = users.filter(function (x) { return norm(x.name) === norm(account.name); })[0];
@@ -239,7 +239,7 @@
         field.appendChild(fl);
         if (i.id === 'c_password') {
             var ph = document.createElement('small'); ph.className = 'fhint';
-            ph.textContent = 'At least 6 characters.';
+            ph.textContent = 'Use 8+ characters with A-Z, a-z, 0-9 and a symbol.';
             field.appendChild(ph);
         }
         field.appendChild(err);
@@ -290,7 +290,7 @@
             ['f_name', 'l_name', 'city', 'brgy'].forEach(function (id) {
                 if (has(id) && !NAME_RE.test(val(id))) bad($('#' + id), 'Letters only. Numbers and symbols are not allowed.');
             });
-            if (has('c_password') && $('#c_password').value.length < 6) bad($('#c_password'), 'At least 6 characters.');
+            if (has('c_password') && !SH.pwChecks($('#c_password').value).ok) bad($('#c_password'), 'Use 8+ characters with A-Z, a-z, 0-9 and a symbol.');
             if (has('confirm_password') && $('#confirm_password').value !== $('#c_password').value) bad($('#confirm_password'), 'Passwords do not match.');
             if (has('age') && !(+val('age') >= 1 && +val('age') <= 120)) bad($('#age'), 'Enter an age from 1 to 120.');
             if (has('email') && !/^[^\s@]+@gmail\.com$/i.test(val('email'))) bad($('#email'), 'Must have "@" and end with gmail.com');

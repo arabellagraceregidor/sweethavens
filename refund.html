@@ -36,7 +36,12 @@
                 <label for="refund_details">Extra details or your reason</label>
                 <textarea id="refund_details" name="details" rows="4" style="width:100%;box-sizing:border-box;border:2px solid var(--bord);background:var(--field);color:var(--ink);border-radius:12px;padding:16px;font:inherit"></textarea>
                 <label for="refund_evidence">Add a picture or video (required)</label>
-                <input id="refund_evidence" name="evidence" type="file" accept="image/*,video/*" required multiple>
+                <div class="photo_row" data-upload>
+                    <div class="photo_prev" id="refund_prev"></div>
+                    <input id="refund_evidence" name="evidence" type="file" accept="image/*,video/*" required multiple hidden>
+                    <button type="button" class="btn_dark" id="refund_pick" data-pick="self">Upload files</button>
+                    <span id="refund_fn">No file chosen</span>
+                </div>
                 <p class="form_msg" id="refund_msg"></p>
                 <button class="btn_dark" type="submit">Submit Refund Request</button>
             </form>

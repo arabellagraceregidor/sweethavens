@@ -295,7 +295,6 @@
                         cv.getContext('2d').drawImage(img, 0, 0, w, h);
                         gcShot = cv.toDataURL('image/webp', 0.85);
                         gcPrev.style.backgroundImage = 'url(' + gcShot + ')';
-                        gcFn.textContent = f.name.length > 24 ? f.name.slice(0, 21) + '...' : f.name;
                         setMsg(gcMsg, '');
                     };
                     img.onerror = function () { setMsg(gcMsg, 'That photo could not be read. Try another one.', 'err'); };
@@ -558,7 +557,7 @@
             '<label class="cc_label" for="cc_ref">Reference number</label>' +
             '<input class="cc_in" id="cc_ref" maxlength="24" placeholder="Reference number on your receipt">' +
             '<label class="cc_label" for="cc_file">Receipt</label>' +
-            '<div class="photo_row"><div class="photo_prev cc_prev" id="cc_prev"></div><input type="file" id="cc_file" accept="image/*">' +
+            '<div class="photo_row" data-upload><div class="photo_prev cc_prev" id="cc_prev"></div><input type="file" id="cc_file" accept="image/*">' +
             '<button type="button" class="btn_dark cc_pick" id="cc_pick">Upload receipt</button><span class="cc_fn" id="cc_fn">No receipt uploaded</span></div></div>' +
             '<p class="cc_msg" id="cc_msg"></p>' +
             '<div class="cc_btns"><button type="button" class="cc_keep" id="cc_keep">Keep order</button>' +
@@ -572,6 +571,7 @@
             cc.classList.remove('on'); ccOrder = null; ccShot = '';
             ccEl('cc_prev').style.backgroundImage = ''; ccEl('cc_prev').classList.remove('invalid');
             ccEl('cc_fn').textContent = 'No receipt uploaded'; ccEl('cc_file').value = '';
+            SH.uploadReset(ccEl('cc_file'));
             ccEl('cc_reason').classList.remove('invalid'); ccEl('cc_other').classList.remove('invalid'); ccEl('cc_ref').classList.remove('invalid');
             ccSay('');
         };
@@ -586,6 +586,7 @@
             ccEl('cc_ref').value = ''; ccEl('cc_ref').classList.remove('invalid');
             ccEl('cc_prev').classList.remove('invalid'); ccEl('cc_prev').style.backgroundImage = '';
             ccShot = ''; ccEl('cc_fn').textContent = 'No receipt uploaded'; ccEl('cc_file').value = '';
+            SH.uploadReset(ccEl('cc_file'));
             ccSay('');
             if (!paid) ccSay('No refund will be made: cash is only collected on delivery, so this order was not charged.');
             cc.classList.add('on');
@@ -618,7 +619,6 @@
                     cv.getContext('2d').drawImage(img, 0, 0, w, h);
                     ccShot = cv.toDataURL('image/webp', 0.85);
                     ccEl('cc_prev').style.backgroundImage = 'url(' + ccShot + ')';
-                    ccEl('cc_fn').textContent = f.name.length > 24 ? f.name.slice(0, 21) + '...' : f.name;
                     ccSay('');
                 };
                 img.onerror = function () { ccSay('That receipt could not be read. Try another one.', true); };
