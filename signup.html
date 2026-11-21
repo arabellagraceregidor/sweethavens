@@ -85,10 +85,14 @@
             </select><br>
 
             <label for="city">City/Municipality</label><br>
-            <input type="text" id="city" name="city" placeholder="Manila" required><br>
+            <select id="city" name="city" required disabled>
+                <option value="">Choose your region first</option>
+            </select><br>
 
             <label for="brgy">Barangay</label><br>
-            <input type="text" id="brgy" name="brgy" placeholder="Barangay Name" required><br>
+            <select id="brgy" name="brgy" required disabled>
+                <option value="">Choose your city/municipality first</option>
+            </select><br>
 
             <label for="zip">Zip Code</label><br>
             <input type="text" id="zip" name="zip" inputmode="numeric" maxlength="4" placeholder="****" required><br>

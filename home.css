@@ -348,6 +348,7 @@ label.req::after{ content:" *"; color:var(--err); }
     background-repeat:no-repeat; background-position:right 18px center; background-size:18px 18px; }
 .form_cont select option{ background:var(--card); color:var(--ink); }
 .form_cont select:focus{ border-color:var(--pk2); }
+.form_cont select:disabled{ opacity:.6; cursor:not-allowed; }
 .form_cont .sec_hint{ text-align:left; margin:8px 0 18px; font:15px/1.45 var(--ari); color:var(--ph); }
 .form_cont .sec_hint.bad{ color:var(--err); font-weight:700; }
 

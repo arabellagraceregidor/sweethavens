@@ -589,6 +589,64 @@
         });
     });
 
+    /* ---- sign up: region -> city/municipality -> barangay cascading selects ---- */
+    onReady(function () {
+        var regionSel = $('#region'), citySel = $('#city'), brgySel = $('#brgy');
+        if (!regionSel || !citySel || !brgySel) return;
+        var data = null;
+        function resetCity(placeholder) {
+            citySel.innerHTML = '';
+            var o = document.createElement('option'); o.value = ''; o.textContent = placeholder || 'Choose your region first';
+            citySel.appendChild(o);
+            citySel.disabled = true;
+        }
+        function resetBrgy(placeholder) {
+            brgySel.innerHTML = '';
+            var o = document.createElement('option'); o.value = ''; o.textContent = placeholder || 'Choose your city/municipality first';
+            brgySel.appendChild(o);
+            brgySel.disabled = true;
+        }
+        function buildCity(region) {
+            resetCity(region ? 'Choose city/municipality' : 'Choose your region first');
+            resetBrgy('Choose your city/municipality first');
+            if (!region || !data || !data[region]) return;
+            citySel.disabled = false;
+            data[region].forEach(function (m) {
+                var opt = document.createElement('option');
+                opt.value = m.name;
+                opt.textContent = m.name + ' (' + m.province + ')';
+                opt.setAttribute('data-province', m.province);
+                citySel.appendChild(opt);
+            });
+        }
+        function buildBrgy() {
+            resetBrgy('Choose your city/municipality first');
+            var region = regionSel.value, cityName = citySel.value;
+            if (!region || !cityName || !data || !data[region]) return;
+            var prov = null;
+            if (citySel.selectedIndex >= 0) {
+                var opt = citySel.options[citySel.selectedIndex];
+                prov = opt ? opt.getAttribute('data-province') : null;
+            }
+            var muni = null;
+            data[region].some(function (m) { if (m.name === cityName && (!prov || m.province === prov)) { muni = m; return true; } return false; });
+            if (!muni) return;
+            brgySel.disabled = false;
+            // replace placeholder text
+            brgySel.options[0].textContent = 'Choose barangay';
+            muni.barangays.forEach(function (b) {
+                var o = document.createElement('option'); o.value = b; o.textContent = b;
+                brgySel.appendChild(o);
+            });
+        }
+        regionSel.addEventListener('change', function () { buildCity(regionSel.value); });
+        citySel.addEventListener('change', buildBrgy);
+        fetch('ph_locations.json').then(function (r) { return r.json(); }).then(function (j) {
+            data = j;
+            if (regionSel.value) { buildCity(regionSel.value); if (citySel.value) buildBrgy(); }
+        }).catch(function () { /* leave selects disabled if data fails to load */ });
+    });
+
     /* ---- home page: Learn More / Add to cart / Order Now ---- */
     function modal(html) {
         var m = $('#modal');
