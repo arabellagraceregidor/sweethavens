@@ -66,12 +66,12 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
 ## Timeline
 | Task | Date |
 |------|------|
-| Research and Planning | Sept 14 – Sept 22, 2026 |
-| Company Profile and Content | Sept 18 – Sept 28, 2026 |
-| Sitemap and Wireframe | Sept 26 – Oct 5, 2026 |
-| Website Design | Oct 1 – Oct 15, 2026 |
-| HTML Development | Oct 11 – Oct 24, 2026 |
-| CSS and Styling | Oct 18 – Nov 2, 2026 |
-| JavaScript & Web Storage | Oct 26 – Nov 12, 2026 |
-| Testing and Debugging | Nov 10 – Nov 21, 2026 |
-| Finalization, GitHub Deployment & Presentation | Nov 18 – Nov 24, 2026 |
+| Research and Planning | Sept 14 – Sept 20, 2026 |
+| Company Profile and Content | Sept 14 – Oct 6, 2026 |
+| Sitemap and Wireframe | Sept 14  – Oct 10, 2026 |
+| Website Design | Sep 15 – Oct 11, 2026 |
+| HTML Development | Sep 14 – Oct 8, 2026 |
+| CSS and Styling | Oct 9 – Oct 25, 2026 |
+| JavaScript & Web Storage | Oct 6 – Nov 25, 2026 |
+| Testing and Debugging | Nov 17 – Nov 21, 2026 |
+| Finalization, GitHub Deployment & Presentation | Nov 22 – Nov 24, 2026 |
