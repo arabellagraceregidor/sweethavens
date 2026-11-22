@@ -71,7 +71,7 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
 | Sitemap and Wireframe | Sept 14  – Oct 10, 2026 |
 | Website Design | Sep 15 – Oct 11, 2026 |
 | HTML Development | Sep 14 – Oct 8, 2026 |
-| CSS and Styling | Oct 9 – Oct 25, 2026 |
+| CSS and Styling | Sep 14 – Oct 25, 2026 |
 | JavaScript & Web Storage | Oct 6 – Nov 25, 2026 |
 | Testing and Debugging | Nov 17 – Nov 21, 2026 |
 | Finalization, GitHub Deployment & Presentation | Nov 22 – Nov 24, 2026 |
