@@ -64,9 +64,10 @@ To provide an online presence for SweetHavens, allow customers to to browse prod
 - Translated UI wireframes and brand guidelines into a cohesive, user-friendly interface
 
 ## Timeline
-| Phase | Task | Date |
-|-------|------|------|
-| Proposal | Planning & wireframe | Sept 2026 |
-| Development | Coding & testing | Oct–Nov, 2026 |
-| Deployment | GitHub setup & launch | Nov 21–23, 2026 |
-| Submission | Final documentation | Nov 23, 2026 |
+| SDLC Phase | Tasks | Date |
+|------------|-------|------|
+| Planning & Analysis | Research, planning, company profile, and content | Sept 14 – Sept 28, 2026 |
+| Design | Sitemap, wireframes, and UI/UX design | Sept 26 – Oct 15, 2026 |
+| Development / Implementation | HTML structure, CSS styling, and JavaScript | Oct 11 – Nov 12, 2026 |
+| Testing & Integration | Module testing, debugging, and form/navigation fixes | Nov 10 – Nov 21, 2026 |
+| Deployment & Submission | GitHub Pages deployment, final documentation, and presentation | Nov 18 – Nov 24, 2026 |
