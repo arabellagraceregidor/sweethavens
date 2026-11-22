@@ -26,29 +26,36 @@
     }
 
     /* ---------------- FORGOT PASSWORD: security question + one-time e-mail code ---------------- */
-    var forgot = $('#forgot_form');
+var forgot = $('#forgot_form');
     if (forgot) {
-        var nameIn = $('#reset_name'), ansIn = $('#reset_answer'), ageIn = $('#reset_age'), mailIn = $('#reset_email');
+        var nameIn = $('#reset_name'), mailIn = $('#reset_email'), ansIn = $('#reset_answer');
         var pwIn = $('#reset_password'), cfIn = $('#reset_confirm'), fmsg = $('#forgot_msg');
-        var hint = $('#sec_hint'), ansBox = $('#answer_box'), legBox = $('#legacy_box');
-        var stepId = $('#step_id'), stepCode = $('#step_code'), stepPw = $('#step_pw');
+        var hint = $('#sec_hint'), secQText = $('#sec_question_text');
+        var stepId = $('#step_id'), stepCode = $('#step_code'), stepSec = $('#step_sec'), stepPw = $('#step_pw');
         var codeIn = $('#reset_code'), codeHint = $('#code_hint'), codeTimer = $('#code_timer');
-        var mailCard = $('#mail_card'), mailTo = $('#mail_to'), mailCode = $('#mail_code');
-        var sendBtn = $('#send_code'), verifyBtn = $('#verify_code'), resendLink = $('#resend_code');
-        var account = null, otp = null, tick = null, issued = {};
+        var sendBtn = $('#send_code'), verifyBtn = $('#verify_code'), verifyAnsBtn = $('#verify_answer'), resendLink = $('#resend_code');
+        var account = null, otp = null, tick = null, issued = {}, secOk = false;
+
+        /* EMAILJS KEYS PARA SA SWEETHAVENS */
+        var EMAILJS_PUBLIC_KEY = 'LKZ32eIs0NYi2M_12';
+        var EMAILJS_SERVICE_ID = 'service_k3y3p5u';
+        var EMAILJS_TEMPLATE_ID = 'template_b2ilw9p';
+
+        if (window.emailjs) {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
 
         var say = function (t, bad) { fmsg.textContent = t || ''; fmsg.className = 'form_msg' + (bad ? ' err' : ''); };
 
         /* j***@gmail.com */
         var maskMail = function (m) {
             var s = String(m || '').trim(), at = s.indexOf('@');
-            if (at < 1) return s || 'the Gmail on this account';
+            if (at < 1) return s || 'your Gmail';
             var head = s.slice(0, Math.min(2, at)), star = '';
             for (var i = 0; i < Math.min(6, Math.max(1, at - 2)); i++) star += '*';
             return head + star + s.slice(at);
         };
 
-        /* every code is new: it is never repeated while this page is open */
         var newCode = function () {
             var c;
             do {
@@ -61,53 +68,13 @@
         };
 
         var stopTick = function () { if (tick) { clearInterval(tick); tick = null; } };
-        var clearLookup = function () {
-            account = null; ansBox.hidden = true; legBox.hidden = true;
-            hint.className = 'sec_hint';
-            hint.textContent = 'Type the name you used when you created the account.';
-        };
-        var backToStart = function () {
-            stopTick(); otp = null;
-            stepId.hidden = false; stepCode.hidden = true; stepPw.hidden = true;
-            mailCard.hidden = true; codeIn.value = ''; codeTimer.textContent = ''; codeTimer.className = 'fhint';
-            say('');
-        };
-        var lookUp = function () {
-            var n = nameIn.value.trim();
-            clearLookup(); say('');
-            if (!n) { say('Enter the name on the account.', true); nameIn.focus(); return; }
-            if (norm(n) === norm(STAFF[0].name)) {
-                hint.classList.add('bad');
-                hint.textContent = 'This is the shop admin account. Its password can only be changed by the shop owner.';
-                return;
-            }
-            var users = S.get('sh_users', []);
-            var found = users.filter(function (x) { return norm(x.name) === norm(n); })[0];
-            if (!found) {
-                hint.classList.add('bad');
-                hint.textContent = 'No saved account matches that name.';
-                return;
-            }
-            account = found;
-            if (found.secQ && found.secA) {
-                hint.textContent = 'Security question: ' + found.secQ;
-                ansBox.hidden = false;
-            } else {
-                hint.textContent = 'This account was made before security questions. Confirm its age and Gmail instead.';
-                legBox.hidden = false;
-            }
-        };
 
-        /* the security answer (or the age + Gmail of an older account) must match before a code is sent */
-        var identityOk = function () {
-            if (account.secQ && account.secA) {
-                if (!ansIn.value.trim()) { say('Type the answer to your security question.', true); ansIn.focus(); return false; }
-                if (norm(ansIn.value) !== norm(account.secA)) { say('That answer does not match. Please try again.', true); ansIn.focus(); return false; }
-                return true;
-            }
-            if (!ageIn.value.trim() || String(ageIn.value.trim()) !== String(account.age)) { say('The age does not match this account.', true); ageIn.focus(); return false; }
-            if (norm(mailIn.value) !== norm(account.email)) { say('The Gmail does not match this account.', true); mailIn.focus(); return false; }
-            return true;
+        var resetAllSteps = function () {
+            stopTick(); account = null; otp = null; secOk = false;
+            stepId.hidden = false; stepCode.hidden = true; stepSec.hidden = true; stepPw.hidden = true;
+            codeIn.value = ''; ansIn.value = ''; codeTimer.textContent = ''; codeTimer.className = 'fhint';
+            sendBtn.disabled = false; sendBtn.textContent = 'Send Code to Email';
+            say('');
         };
 
         var showTimer = function () {
@@ -126,29 +93,67 @@
             paint(); tick = setInterval(paint, 1000);
         };
 
+        /* STEP 1: Verify Name + Gmail, then send real email via EmailJS */
         var sendCode = function () {
             say('');
-            if (!account) { lookUp(); if (!account) return; }
-            if (!identityOk()) return;
-            var mail = String(account.email || '').trim();
-            if (!mail) { say('This account has no Gmail saved, so a code cannot be sent to it.', true); return; }
-            otp = { code: newCode(), exp: Date.now() + 5 * 60000, tries: 0, ok: false };
-            codeIn.value = '';
-            codeHint.textContent = 'A one-time code was sent to ' + maskMail(mail) + '.';
-            mailTo.textContent = 'To: ' + maskMail(mail);
-            mailCode.textContent = otp.code.split('').join(' ');
-            mailCard.hidden = false;
-            stepId.hidden = true; stepCode.hidden = false; stepPw.hidden = true;
-            showTimer();
-            codeIn.focus();
+            var n = nameIn.value.trim();
+            var m = mailIn.value.trim();
+            if (!n) { say('Enter the name on the account.', true); nameIn.focus(); return; }
+            if (!m) { say('Enter the Gmail address linked to the account.', true); mailIn.focus(); return; }
+            if (norm(n) === norm(STAFF[0].name)) {
+                say('This is the shop admin account. Its password can only be changed by the shop owner.', true);
+                return;
+            }
+            var users = S.get('sh_users', []);
+            var found = users.filter(function (x) {
+                return norm(x.name) === norm(n) && norm(x.email) === norm(m);
+            })[0];
+
+            if (!found) {
+                say('No saved account matches that Name and Gmail address.', true);
+                return;
+            }
+
+            account = found;
+            secOk = false;
+            var generatedOtp = newCode();
+            otp = { code: generatedOtp, exp: Date.now() + 5 * 60000, tries: 0, ok: false };
+
+            var goToCodeStep = function (note) {
+                codeIn.value = '';
+                codeHint.textContent = note;
+                stepId.hidden = true; stepCode.hidden = false; stepSec.hidden = true; stepPw.hidden = true;
+                sendBtn.disabled = false; sendBtn.textContent = 'Send Code to Email';
+                showTimer();
+                codeIn.focus();
+            };
+
+            if (window.emailjs) {
+                sendBtn.disabled = true;
+                sendBtn.textContent = 'Sending...';
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_name: account.name,
+                    to_email: account.email,
+                    otp_code: generatedOtp
+                }).then(function () {
+                    goToCodeStep('A 6-digit verification code was sent to ' + maskMail(account.email) + '. Please check your Gmail inbox or Spam folder.');
+                }, function (err) {
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Send Code to Email';
+                    say('Failed to send email. Please check your internet connection or EmailJS setup.', true);
+                });
+            } else {
+                say('Email service script failed to load. Please refresh the page.', true);
+            }
         };
 
-        var verify = function () {
+        /* STEP 2: Verify 6-digit code */
+        var verifyCode = function () {
             say('');
             if (!otp) { say('Send a code first.', true); return; }
             if (Date.now() > otp.exp) { stopTick(); otp = null; say('That code has expired. Send a new code.', true); return; }
             var typed = digits(codeIn.value);
-            if (typed.length !== 6) { say('Type the 6-digit code from the message.', true); codeIn.focus(); return; }
+            if (typed.length !== 6) { say('Type the 6-digit code sent to your Gmail.', true); codeIn.focus(); return; }
             if (typed !== otp.code) {
                 otp.tries++;
                 if (otp.tries >= 5) { stopTick(); otp = null; say('Too many wrong codes. Send a new code.', true); }
@@ -158,39 +163,71 @@
             }
             otp.ok = true;
             stopTick();
-            codeTimer.textContent = 'Code verified.';
-            codeTimer.className = 'fhint';
-            stepCode.hidden = true; stepPw.hidden = false;
-            say('Code verified. Choose a new password.');
+
+            /* STEP 3: Security Question (kung meron), o diretso Step 4 kung legacy account */
+            if (account && account.secQ && account.secA) {
+                secQText.textContent = account.secQ;
+                ansIn.value = '';
+                stepCode.hidden = true; stepSec.hidden = false; stepPw.hidden = true;
+                say('Code verified. Answer your security question to continue.');
+                ansIn.focus();
+            } else {
+                secOk = true;
+                stepCode.hidden = true; stepSec.hidden = true; stepPw.hidden = false;
+                say('Code verified. Choose a new password.');
+                pwIn.focus();
+            }
+        };
+
+        /* STEP 3: Verify Security Question Answer */
+        var verifyAnswer = function () {
+            say('');
+            if (!otp || !otp.ok) { say('Verify the email code first.', true); return; }
+            if (!ansIn.value.trim()) { say('Type the answer to your security question.', true); ansIn.focus(); return; }
+            if (norm(ansIn.value) !== norm(account.secA)) {
+                say('That answer does not match. Please try again.', true);
+                ansIn.focus();
+                return;
+            }
+            secOk = true;
+            stepSec.hidden = true; stepPw.hidden = false;
+            say('Security answer verified. Choose a new password.');
             pwIn.focus();
         };
 
-        nameIn.addEventListener('blur', function () { if (!account) lookUp(); });
-        nameIn.addEventListener('input', function () {
-            var typed = nameIn.value.trim();
-            if (account && norm(typed) !== norm(account.name)) { backToStart(); clearLookup(); return; }
-            if (!typed) { backToStart(); clearLookup(); }
+        /* Event Listeners */
+        [nameIn, mailIn, ansIn, pwIn, cfIn].forEach(function (el) {
+            if (el) el.addEventListener('input', function () { say(''); });
         });
-        [ansIn, ageIn, mailIn, pwIn, cfIn].forEach(function (el) { if (el) el.addEventListener('input', function () { say(''); }); });
-        codeIn.addEventListener('input', function () { codeIn.value = digits(codeIn.value).slice(0, 6); });
-        codeIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); verify(); } });
-        sendBtn.addEventListener('click', sendCode);
-        verifyBtn.addEventListener('click', verify);
-        resendLink.addEventListener('click', function (e) { e.preventDefault(); if (!account) { backToStart(); return; } sendCode(); });
+        codeIn.addEventListener('input', function () { codeIn.value = digits(codeIn.value).slice(0, 6); say(''); });
+        codeIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); verifyCode(); } });
+        ansIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); verifyAnswer(); } });
 
+        sendBtn.addEventListener('click', sendCode);
+        verifyBtn.addEventListener('click', verifyCode);
+        verifyAnsBtn.addEventListener('click', verifyAnswer);
+        resendLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!account) { resetAllSteps(); return; }
+            sendCode();
+        });
+
+        /* STEP 4: Update Password */
         forgot.addEventListener('submit', function (e) {
             e.preventDefault();
-            if (!otp || !otp.ok) { say('Verify the one-time code before changing the password.', true); return; }
+            if (!otp || !otp.ok) { say('Verify the email code first.', true); return; }
+            if (!secOk) { say('Answer your security question before changing the password.', true); return; }
             if (!SH.pwChecks(pwIn.value).ok) { say('Use 8+ characters with A-Z, a-z, 0-9 and a symbol.', true); pwIn.focus(); return; }
             if (pwIn.value !== cfIn.value) { say('The passwords do not match.', true); cfIn.focus(); return; }
+
             var users = S.get('sh_users', []);
-            var live = users.filter(function (x) { return norm(x.name) === norm(account.name); })[0];
+            var live = users.filter(function (x) { return norm(x.name) === norm(account.name) && norm(x.email) === norm(account.email); })[0];
             if (!live) { say('No saved account matches that name.', true); return; }
             live.pw = pwIn.value;
             S.set('sh_users', users);
             forgot.reset();
-            clearLookup(); backToStart();
-            say('Password updated. Return to the login page to sign in.');
+            resetAllSteps();
+            say('Password updated! You can now sign in with your new password.');
         });
         return;
     }
