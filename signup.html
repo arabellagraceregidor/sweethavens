@@ -43,12 +43,12 @@
 
             <!-- sex field -->
             <label for="sex">Sex</label><br>
-            <input list="sex" id="sex" name="sex" placeholder="Sex" required><br><br>
-            <datalist id="sex">
-                <option value="Male">
-                <option value="Female">
-                <option value="Prefer not to say">
-            </datalist>
+            <select id="sex" name="sex" required>
+                <option value="" disabled selected>Select your sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select><br><br>
 
             <!-- gmail field -->
             <label for="email">Gmail</label><br>
