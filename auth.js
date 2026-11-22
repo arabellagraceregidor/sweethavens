@@ -250,7 +250,7 @@
 
     /* ---- live input rules: letters only, digits only, 09XX XXX XXXX ---- */
     if (isSignup) {
-        ['f_name', 'l_name', 'city', 'brgy'].forEach(function (id) {
+        ['f_name', 'l_name'].forEach(function (id) {
             var el = $('#' + id); if (!el) return;
             el.addEventListener('input', function () {
                 var before = el.value, pos = el.selectionStart;
@@ -265,7 +265,11 @@
         });
         wireCap('f_name', 'first');
         wireCap('l_name', 'first');
-        wireCap('city', 'first');
+        /* city and barangay are selects: choosing a value only clears the error */
+        ['city', 'brgy'].forEach(function (id) {
+            var el = $('#' + id); if (!el) return;
+            el.addEventListener('change', function () { clearBad(el); });
+        });
         var zip = $('#zip');
         if (zip) zip.addEventListener('input', function () { zip.value = digits(zip.value).slice(0, 4); clearBad(zip); });
         var contact = $('#contact');
@@ -287,7 +291,7 @@
         inputs.forEach(function (i) { if (i.required && !String(i.value).trim()) bad(i, 'Please fill in this box.'); });
         if (isSignup) {
             var has = function (id) { return val(id) !== ''; };
-            ['f_name', 'l_name', 'city', 'brgy'].forEach(function (id) {
+            ['f_name', 'l_name'].forEach(function (id) {
                 if (has(id) && !NAME_RE.test(val(id))) bad($('#' + id), 'Letters only. Numbers and symbols are not allowed.');
             });
             if (has('c_password') && !SH.pwChecks($('#c_password').value).ok) bad($('#c_password'), 'Use 8+ characters with A-Z, a-z, 0-9 and a symbol.');
@@ -309,7 +313,6 @@
             var fn = capFirst(val('f_name')), ln = capFirst(val('l_name'));
             var users = S.get('sh_users', []), name = fn + ' ' + ln;
             $('#f_name').value = fn; $('#l_name').value = ln;
-            $('#city').value = capFirst(val('city'));
             if (users.some(function (u) { return norm(u.name) === norm(name); }) || STAFF.some(function (s) { return norm(s.name) === norm(name); })) {
                 bad($('#f_name'), 'This account already exists. Please log in.'); jump($('#f_name')); return;
             }
