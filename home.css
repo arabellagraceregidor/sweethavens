@@ -495,7 +495,7 @@ label.req::after{ content:" *"; color:var(--err); }
 #gc_fn{ font:15px var(--ari); color:var(--ph); }
 .photo_prev.invalid{ border-color:var(--err); box-shadow:0 0 0 4px rgba(217,48,37,.15); }
 .pay_msg.busy::before{ content:""; width:14px; height:14px; border:2px solid var(--bord); border-top-color:var(--mar); border-radius:50%; animation:pay_spin .7s linear infinite; }
-.pay_methods{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:0 0 20px; }
+.pay_methods{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin:0 0 20px; }
 .pay_opt{ min-height:48px; padding:10px 12px; border:2px solid var(--bord); border-radius:14px; background:var(--field); color:var(--mar);
     font:700 15px var(--ari); cursor:pointer; transition:transform .15s, background .2s, border-color .2s, color .2s, box-shadow .2s; }
 .pay_opt:hover{ transform:translateY(-2px); border-color:var(--pk2); }
@@ -519,7 +519,7 @@ label.req::after{ content:" *"; color:var(--err); }
     .pay_grid{ grid-template-columns:1fr; gap:12px; }
 }
 @media (min-width:768px) and (max-width:991.98px){
-    .pay_methods{ grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .pay_methods{ grid-template-columns:1fr 1fr; gap:8px; }
     .pay_opt{ font-size:13px; padding:10px 8px; }
     .pay_grid{ grid-template-columns:1fr 1fr; }
 }
