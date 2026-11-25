@@ -483,10 +483,14 @@
                 '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
                 '<button type="button" class="oc_rc" data-rc="' + esc(o.id) + '">View receipt</button><button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' + cancel + '</div></div></div>';
         };
+        var isCompletedOrder = function (o) {
+            var s = String(o && o.status || '').trim().toLowerCase();
+            return s === 'delivered' || s === 'picked up';
+        };
         var reviewCards = function (all) {
             var rows = [];
             all.forEach(function (o) {
-                if (o.status === 'Cancelled' || o.status === 'Returned') return;
+                if (!isCompletedOrder(o)) return;
                 (o.items || []).forEach(function (i, index) {
                     if (reviewed(o, index)) return;
                     rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(i.tag || SH.orderTagLabel(o)) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
@@ -514,7 +518,7 @@
                 'To Pay': all.filter(function (o) { return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned'; }).length,
                 'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up'); }).length,
                 'To Receive': all.filter(function (o) { return (o.status === 'Ready' || o.status === 'Pick Up') && o.mode === 'Delivery'; }).length,
-                'To Review': all.filter(function (o) { return o.status !== 'Cancelled' && o.status !== 'Returned'; }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
+                'To Review': all.filter(function (o) { return isCompletedOrder(o); }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
                 'Return': all.filter(function (o) { return o.status === 'Returned'; }).length
             };
             var bar = '<div class="oc_tabs">' + TABS.map(function (name) {
