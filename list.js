@@ -6,7 +6,7 @@ const products = [
 ];
 const classics = [
     { id: 1, name: "Chocolate Chip", notif: "Best Sellers", image: "assets/CHOCOLATECHIP.png", bg: "#CEA386", desc: "Soft and chewy cookies packed with chocolate chips. A clasic favorite that gives you a sweet and a chocolatey treat in every bite." },
-    { id: 2, name: "Red Velvet Cloud bites", notif: "Best Sellers", image: "assets/REDVELVET.png", bg: "#93494A", desc: "Rich red velvet cookies combined with a creamy white chocolate chunks." }
+    { id: 2, name: "Red Velvet Cloud Bites", notif: "Best Sellers", image: "assets/REDVELVET.png", bg: "#93494A", desc: "Rich red velvet cookies combined with a creamy white chocolate chunks." }
 ]
 
 function populateList() {
