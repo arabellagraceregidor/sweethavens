@@ -303,9 +303,9 @@
             if (bad.length) { bad.forEach(function (i) { i.classList.add('invalid'); }); bad[0].focus(); cpMsg('Please fill in the flavor and price.', 1); return; }
             if (cat().some(function (c) { return SH.norm(c.n) === SH.norm(nm.value); })) { nm.classList.add('invalid'); cpMsg('That product already exists.', 1); return; }
             var list = S.get('sh_products', []);
-            list.push({ id: 'p' + Date.now(), n: nm.value.trim(), p: +pr.value, s: 30, d: $('#desc').value.trim(), t: $('#type').value.trim(), img: cpPhoto });
+            list.push({ id: 'p' + Date.now(), n: nm.value.trim(), p: +pr.value, s: 0, d: $('#desc').value.trim(), t: $('#type').value.trim(), img: cpPhoto });
             S.set('sh_products', list);
-            var st = SH.stock(); st[nm.value.trim()] = 30; SH.saveStock(st);
+            var st = SH.stock(); st[nm.value.trim()] = 0; SH.saveStock(st);
             clearAdd(); cpMsg('Product added! It now shows on the home page.'); drawList();
         });
 
@@ -356,6 +356,12 @@
             if (rm) {
                 var key = rm.getAttribute('data-rm'), isCustom = rm.getAttribute('data-custom') === '1';
                 if (!confirm('Delete this product?')) return;
+
+                var targetItem = isCustom
+                    ? S.get('sh_products', []).filter(function (p) { return p.id === key; })[0]
+                    : cat().filter(function (c) { return c.n === key; })[0];
+                var deletedName = targetItem ? targetItem.n : key;
+
                 if (isCustom) {
                     S.set('sh_products', S.get('sh_products', []).filter(function (p) { return p.id !== key; }));
                 } else {
@@ -364,8 +370,20 @@
                     ed[key].deleted = true;
                     S.set('sh_edits', ed);
                 }
+
+                // Alisin din sa sh_batches ang lahat ng logged batches ng dinelete na product
+                var remainingBatches = S.get('sh_batches', []).filter(function (b) {
+                    return SH.norm(b.product) !== SH.norm(deletedName);
+                });
+                S.set('sh_batches', remainingBatches);
+
+                // I-reset din ang stock entry ng dinelete na product
+                var st = SH.stock();
+                delete st[deletedName];
+                SH.saveStock(st);
+
                 if (editKey === key) closeEdit();
-                SH.toast('Product removed'); drawList();
+                SH.toast('Product and its batches removed'); drawList();
             }
         });
         drawList();
