@@ -83,6 +83,39 @@
         return days;
     }
 
+/* ---------------- INVENTORY TABLE (inventory.html & dashboard.html) ---------------- */
+    var drawInv = function () {
+        if (!$('#inv')) return;
+        var C = cat(), st = SH.stock();
+        $('#inv').innerHTML = '<tr><th>Product</th><th>Price</th><th>In stock</th><th>Status</th><th>Adjust</th></tr>' + C.map(function (c) {
+            var q = st[c.n], l = lvl(q), nm = esc(c.n);
+            return '<tr><td>' + (c.img ? '<img class="thumb" src="' + esc(c.img) + '" alt="">' : '') + nm + '</td><td>' + fmt(c.p) + '</td><td><b>' + q + '</b></td><td><span class="pill_s ' + l + '">' + lvlText[l] + '</span></td>' +
+                '<td><button class="mini" data-s="' + nm + '" data-d="-1">-</button><button class="mini" data-s="' + nm + '" data-d="1">+</button> <button class="mini wide" data-s="' + nm + '" data-d="10">Restock +10</button>' +
+                (c.custom ? ' <button class="mini wide del" data-del="' + esc(c.id) + '">Remove</button>' : '') + '</td></tr>';
+        }).join('');
+    };
+
+    if ($('#inv')) {
+        drawInv();
+        $('#inv').addEventListener('click', function (e) {
+            var b = e.target.closest('[data-s]'), del = e.target.closest('[data-del]');
+            if (b) {
+                var st = SH.stock(), n = b.getAttribute('data-s');
+                st[n] = Math.max(0, st[n] + +b.getAttribute('data-d'));
+                SH.saveStock(st);
+                drawInv();
+                if (typeof drawDash === 'function' && $('#adminDash')) drawDash();
+            }
+            if (del) {
+                var list = S.get('sh_products', []).filter(function (p) { return p.id !== del.getAttribute('data-del'); });
+                S.set('sh_products', list);
+                SH.toast('Product removed');
+                drawInv();
+                if (typeof drawDash === 'function' && $('#adminDash')) drawDash();
+            }
+        });
+    }
+
     /* ---------------- DASHBOARD ---------------- */
     if ($('#adminDash')) {
         var photo = '';
@@ -113,25 +146,13 @@
             var smax = Math.max.apply(null, C.map(function (c) { return st[c.n]; }).concat([LOW * 3]));
             $('#stockbars').innerHTML = C.map(function (c) { var q = st[c.n], l = lvl(q); return '<div class="sbar"><span>' + esc(c.n) + '</span><div class="meter"><i class="' + l + '" style="width:' + Math.max(2, Math.round(q / smax * 100)) + '%"></i></div><b>' + q + '</b></div>'; }).join('');
 
-            $('#inv').innerHTML = '<tr><th>Product</th><th>Price</th><th>In stock</th><th>Status</th><th>Adjust</th></tr>' + C.map(function (c) {
-                var q = st[c.n], l = lvl(q), nm = esc(c.n);
-                return '<tr><td>' + (c.img ? '<img class="thumb" src="' + esc(c.img) + '" alt="">' : '') + nm + '</td><td>' + fmt(c.p) + '</td><td><b>' + q + '</b></td><td><span class="pill_s ' + l + '">' + lvlText[l] + '</span></td>' +
-                    '<td><button class="mini" data-s="' + nm + '" data-d="-1">-</button><button class="mini" data-s="' + nm + '" data-d="1">+</button> <button class="mini wide" data-s="' + nm + '" data-d="10">Restock +10</button>' +
-                    (c.custom ? ' <button class="mini wide del" data-del="' + esc(c.id) + '">Remove</button>' : '') + '</td></tr>';
-            }).join('');
+            drawInv();
+
             var rec = orders().slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 5);
             $('#recent').innerHTML = '<tr><th>Order</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr>' + rec.map(function (o) {
                 return '<tr><td>#' + esc(o.id) + '</td><td>' + esc(o.name) + '</td><td>' + dstr(o.date) + '</td><td>' + fmt(o.total) + '</td><td><span class="pill_s ' + o.status + '">' + o.status + '</span></td></tr>';
             }).join('');
         };
-        $('#inv').addEventListener('click', function (e) {
-            var b = e.target.closest('[data-s]'), del = e.target.closest('[data-del]');
-            if (b) { var st = SH.stock(), n = b.getAttribute('data-s'); st[n] = Math.max(0, st[n] + +b.getAttribute('data-d')); SH.saveStock(st); drawDash(); }
-            if (del) {
-                var list = S.get('sh_products', []).filter(function (p) { return p.id !== del.getAttribute('data-del'); });
-                S.set('sh_products', list); SH.toast('Product removed'); drawDash();
-            }
-        });
 
         /* ----- Add Product (+ Add Photo) ----- */
         var msg = function (m, bad) { var e = $('#ap_msg'); e.textContent = m; e.style.color = bad ? 'var(--err)' : 'var(--mar)'; };

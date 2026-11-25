@@ -3,6 +3,189 @@
     <head>
         <title>SweetHavens - Inventory</title>
         <link rel="stylesheet" href="home.css">
+        <style>
+            .batch_grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+                gap: 20px;
+                margin-top: 12px;
+            }
+            .prod_batch_card {
+                background: #ffffff;
+                border: 1.5px solid #f2b5ce;
+                border-radius: 20px;
+                padding: 18px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                box-shadow: 0 4px 14px rgba(122, 46, 77, 0.06);
+            }
+            .pbc_top {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding-bottom: 14px;
+                border-bottom: 1px dashed #f2b5ce;
+                margin-bottom: 14px;
+            }
+            .pbc_img {
+                width: 86px;
+                height: 86px;
+                border-radius: 50%;
+                object-fit: cover;
+                background: #ffd9e8;
+                border: 2px solid #f2b5ce;
+                margin-bottom: 10px;
+            }
+            .pbc_name {
+                font-size: 16px;
+                font-weight: 700;
+                color: #5c1f38;
+                margin: 0 0 6px;
+            }
+            .pbc_form {
+                display: flex;
+                flex-direction: column;
+                gap: 9px;
+            }
+            .pbc_field label {
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                color: #7a2e4d;
+                margin-bottom: 3px;
+            }
+            .pbc_field input {
+                width: 100%;
+                padding: 9px 12px;
+                border: 1.5px solid #f2b5ce;
+                border-radius: 11px;
+                background: #fff6fa;
+                color: #5c1f38;
+                font-family: inherit;
+                font-size: 13px;
+                box-sizing: border-box;
+                outline: none;
+            }
+            .pbc_field input:focus {
+                border-color: #ff69b4;
+            }
+            .pbc_id_box {
+                background: #fff0f6;
+                border: 1px dashed #e598b8;
+                border-radius: 10px;
+                padding: 7px 10px;
+                font-size: 12px;
+                color: #7a2e4d;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 2px;
+            }
+            .pbc_id_box b {
+                color: #5c1f38;
+                font-size: 13px;
+            }
+            .pbc_btn {
+                width: 100%;
+                margin-top: 6px;
+                padding: 10px;
+                border-radius: 999px;
+                cursor: pointer;
+            }
+
+            /* SweetHavens Custom Pop-up Modal */
+            .sh_modal_backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(45, 18, 29, 0.45);
+                z-index: 999;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            }
+            .sh_modal_backdrop.open {
+                display: flex;
+            }
+            .sh_modal_card {
+                background: #fff8fb;
+                border: 2px solid #f2b5ce;
+                border-radius: 22px;
+                max-width: 400px;
+                width: 100%;
+                padding: 24px 22px;
+                box-shadow: 0 16px 36px rgba(92, 31, 56, 0.22);
+                text-align: center;
+                animation: popCard 0.18s ease-out;
+            }
+            @keyframes popCard {
+                from { transform: scale(0.94); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+            .sh_modal_badge {
+                display: inline-block;
+                background: #ffd9e8;
+                color: #7a2e4d;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.4px;
+                text-transform: uppercase;
+                padding: 4px 12px;
+                border-radius: 999px;
+                margin-bottom: 8px;
+            }
+            .sh_modal_badge.warn {
+                background: #ffe2e2;
+                color: #a62626;
+            }
+            .sh_modal_card h3 {
+                margin: 0 0 6px;
+                color: #7a2e4d;
+                font-size: 19px;
+            }
+            .sh_modal_card p {
+                margin: 0 0 14px;
+                font-size: 13px;
+                color: #6e4757;
+            }
+            .sh_modal_summary {
+                background: #ffffff;
+                border: 1px solid #f2b5ce;
+                border-radius: 14px;
+                padding: 12px 14px;
+                text-align: left;
+                font-size: 13px;
+                color: #5c1f38;
+                line-height: 1.75;
+                margin-bottom: 18px;
+            }
+            .sh_modal_actions {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+            .btn_cancel_soft {
+                background: #ffe3ef;
+                color: #7a2e4d;
+                border: 1px solid #f2b5ce;
+                border-radius: 999px;
+                padding: 10px 20px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.15s ease;
+            }
+            .btn_cancel_soft:hover {
+                background: #ffd0e4;
+            }
+
+           .batch_toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0 14px; }
+            .batch_filters { display: flex; flex-wrap: wrap; gap: 8px; }
+            .bf_chip { background: #fff0f6; border: 1px solid #f2b5ce; color: #7a2e4d; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+            .bf_chip.active { background: #7a2e4d; color: #fff; border-color: #7a2e4d; }
+            .batch_id_select { padding: 7px 14px; border: 1.5px solid #f2b5ce; border-radius: 999px; background: #fff6fa; color: #5c1f38; font-family: inherit; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
+        </style>
     </head>
     <body>
         <header>
@@ -20,75 +203,402 @@
                 <div><a class="nav1" href="admin_orders.html">Orders</a></div>
                 <div><a class="nav1">Menu</a></div>
 
-                    <!-- Temporary login button-->
+                <!-- Temporary login button-->
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
 
         <div class="admin_cont">
-            <h1>Inventory Monitoring</h1>
-            <p class="sub">Track stock by category, branch, and batch</p>
+            <h1>Inventory Management</h1>
+            <p class="sub">Add new cookie batches with production and expiry dates</p>
 
+            <!-- Square Product Cards Grid -->
+            <div class="batch_grid" id="batch_cards_grid"></div>
+
+            <br>
+
+            <!-- Batch History Table -->
             <div class="panel2">
-                <h2>Weekly Bakes</h2>
-                <div class="tbl_wrap">
-                    <table class="tbl">
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Quantity</th>
-                            <th>Branch</th>
-                            <th>Batch #</th>
-                        </tr>
-                        <!--Sample-->
-                        <tr>
-                            <td>Matcha Melties</td>
-                            <td><span class="pill_s ok">50</span></td>
-                            <td>TUPM</td>
-                            <td>1</td>
-                        </tr>
-                    </table>
+                <h2>Logged Batches</h2>
+                <div class="batch_toolbar">
+                <div class="batch_filters" id="batch_filters">
+                    <button type="button" class="bf_chip active" data-filter="all">All</button>
+                    <button type="button" class="bf_chip" data-filter="ok">Fresh</button>
+                    <button type="button" class="bf_chip" data-filter="low">Expiring Soon</button>
+                    <button type="button" class="bf_chip" data-filter="expired">Expired</button>
+                    <button type="button" class="bf_chip" data-filter="disposed">Disposed</button>
                 </div>
+                <select id="batch_id_filter" class="batch_id_select" aria-label="Filter by Batch ID">
+                    <option value="all">All Batch IDs</option>
+                </select>
             </div>
-
-            <div class="panel2">
-                <h2>Classic Flavors</h2>
                 <div class="tbl_wrap">
-                    <table class="tbl">
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Quantity</th>
-                            <th>Branch</th>
-                            <th>Batch #</th>
-                        </tr>
-                        <!--Sample-->
-                        <tr>
-                            <td>Matcha Melties</td>
-                            <td><span class="pill_s ok">50</span></td>
-                            <td>TUPM</td>
-                            <td>1</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="panel2">
-                <h2>Batches best before date</h2>
-                <div class="tbl_wrap">
-                    <table class="tbl">
-                        <tr>
-                            <th>Batch number</th>
-                            <th>Best Before</th>
-                        </tr>
-                        <!--Sample-->
-                        <tr>
-                            <td>1</td>
-                            <td>MM/DD/YYYY</td>
-                        </tr>
-                    </table>
+                    <table class="tbl" id="batch_log_tbl"></table>
                 </div>
             </div>
         </div>
+
+        <!-- Unified SweetHavens Pop-up Notice / Confirmation Card -->
+        <div class="sh_modal_backdrop" id="sh_modal">
+            <div class="sh_modal_card">
+                <span class="sh_modal_badge" id="modal_badge">Notice</span>
+                <h3 id="modal_title">Confirm Action</h3>
+                <p id="modal_desc">Please verify the details below:</p>
+                <div class="sh_modal_summary" id="modal_summary"></div>
+                <div class="sh_modal_actions">
+                    <button type="button" class="btn_cancel_soft" id="modal_cancel">Cancel</button>
+                    <button type="button" class="btn_dark" id="modal_confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+
         <script src="site.js"></script>
         <script src="admin.js"></script>
+        <script>
+            (function () {
+                var DEFAULT_PRODUCTS = [
+                    { n: 'Matcha Melties', img: 'assets/matcha.png', code: 'MM' },
+                    { n: 'Biscoff Choco Crunch', img: 'assets/biscoff.png', code: 'BC' },
+                    { n: 'Oatie Choco Paws', img: 'assets/oatie.png', code: 'OC' },
+                    { n: 'Choco Crinkles', img: 'assets/crinkles.png', code: 'CC' },
+                    { n: 'Chocolate Chip', img: 'assets/chocochip.png', code: 'CH' },
+                    { n: 'Red Velvet Cloud Bites', img: 'assets/redvelvet.png', code: 'RV' }
+                ];
+
+                var grid = document.getElementById('batch_cards_grid');
+                var logTbl = document.getElementById('batch_log_tbl');
+                var filterWrap = document.getElementById('batch_filters');
+                var batchIdSelect = document.getElementById('batch_id_filter');
+                var modal = document.getElementById('sh_modal');
+                var modalBadge = document.getElementById('modal_badge');
+                var modalTitle = document.getElementById('modal_title');
+                var modalDesc = document.getElementById('modal_desc');
+                var modalSummary = document.getElementById('modal_summary');
+                var modalCancel = document.getElementById('modal_cancel');
+                var modalConfirm = document.getElementById('modal_confirm');
+
+                var onConfirmAction = null;
+                var activeFilter = 'all';
+                var activeBatchId = 'all';
+
+                function openModal(opts) {
+                    modalBadge.textContent = opts.badge || 'Notice';
+                    modalBadge.className = 'sh_modal_badge' + (opts.warn ? ' warn' : '');
+                    modalTitle.textContent = opts.title || 'Confirm';
+                    modalDesc.textContent = opts.desc || '';
+                    modalSummary.innerHTML = opts.summary || '';
+                    modalSummary.style.display = opts.summary ? 'block' : 'none';
+
+                    if (opts.alertOnly) {
+                        modalCancel.style.display = 'none';
+                        modalConfirm.textContent = opts.confirmText || 'Got it';
+                    } else {
+                        modalCancel.style.display = 'inline-block';
+                        modalCancel.textContent = opts.cancelText || 'Cancel';
+                        modalConfirm.textContent = opts.confirmText || 'Confirm';
+                    }
+
+                    onConfirmAction = opts.onConfirm || null;
+                    modal.classList.add('open');
+                }
+
+                function closeModal() {
+                    onConfirmAction = null;
+                    modal.classList.remove('open');
+                }
+
+                modalCancel.addEventListener('click', closeModal);
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) closeModal();
+                });
+                modalConfirm.addEventListener('click', function () {
+                    var fn = onConfirmAction;
+                    closeModal();
+                    if (typeof fn === 'function') fn();
+                });
+
+                function makeCode(name) {
+                    var found = DEFAULT_PRODUCTS.find(function (d) { return d.n === name; });
+                    if (found) return found.code;
+                    var words = name.trim().split(/\s+/);
+                    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+                    return name.slice(0, 2).toUpperCase();
+                }
+
+                function getProducts() {
+                    var base = (typeof SH !== 'undefined' && SH.CATALOG) ? SH.CATALOG.slice() : DEFAULT_PRODUCTS.slice();
+                    var custom = JSON.parse(localStorage.getItem('sh_products') || '[]');
+                    custom.forEach(function (c) {
+                        if (c && c.n && !base.some(function (b) { return b.n === c.n; })) {
+                            base.push(c);
+                        }
+                    });
+                    return base;
+                }
+
+                function getStockMap() {
+                    if (typeof SH !== 'undefined' && typeof SH.stock === 'function') {
+                        return SH.stock();
+                    }
+                    return JSON.parse(localStorage.getItem('sh_stock') || '{}');
+                }
+
+                function saveStockMap(st) {
+                    if (typeof SH !== 'undefined' && typeof SH.saveStock === 'function') {
+                        SH.saveStock(st);
+                    } else {
+                        localStorage.setItem('sh_stock', JSON.stringify(st));
+                    }
+                }
+
+                function getBatches() {
+                    return JSON.parse(localStorage.getItem('sh_batches') || '[]');
+                }
+
+                function getProductNextBatchId(productName) {
+                    var batches = getBatches();
+                    var prodCount = batches.filter(function (b) { return b.product === productName; }).length;
+                    var nextNum = prodCount + 1;
+                    return makeCode(productName) + '-B' + String(nextNum).padStart(3, '0');
+                }
+
+                function formatDisplayDate(iso) {
+                    if (!iso) return '';
+                    var d = new Date(iso + 'T00:00:00');
+                    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                }
+
+                function getExpiryStatus(batch) {
+                    if (batch.disposed) {
+                        return { key: 'disposed', label: 'Disposed (-' + batch.qty + ' stock)', cls: 'out' };
+                    }
+                    var now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    var exp = new Date(batch.exp + 'T00:00:00');
+                    var diff = Math.ceil((exp - now) / 86400000);
+                    if (diff < 0) return { key: 'expired', label: 'Expired', cls: 'out' };
+                    if (diff <= 3) return { key: 'low', label: 'Expiring Soon', cls: 'low' };
+                    return { key: 'ok', label: 'Fresh', cls: 'ok' };
+                }
+
+                function populateBatchIdDropdown(batches) {
+                    if (!batchIdSelect) return;
+                    var currentVal = activeBatchId || 'all';
+                    var uniqueIds = [];
+                    batches.forEach(function (b) {
+                        if (b.id && uniqueIds.indexOf(b.id) === -1) {
+                            uniqueIds.push(b.id);
+                        }
+                    });
+                    batchIdSelect.innerHTML = '<option value="all">All Batch IDs</option>' +
+                        uniqueIds.map(function (id) {
+                            return '<option value="' + id + '">' + id + '</option>';
+                        }).join('');
+
+                    if (uniqueIds.indexOf(currentVal) !== -1) {
+                        batchIdSelect.value = currentVal;
+                    } else {
+                        batchIdSelect.value = 'all';
+                        activeBatchId = 'all';
+                    }
+                }
+
+                function renderCards() {
+                    var products = getProducts();
+                    var stock = getStockMap();
+                    var today = new Date();
+                    var nextWeek = new Date(today.getTime() + 7 * 86400000);
+                    var todayStr = today.toISOString().split('T')[0];
+                    var expStr = nextWeek.toISOString().split('T')[0];
+
+                    grid.innerHTML = products.map(function (p) {
+                        var qty = stock[p.n] != null ? stock[p.n] : 0;
+                        var pillCls = qty === 0 ? 'out' : (qty < 10 ? 'low' : 'ok');
+                        var imgSrc = p.img || 'assets/Logo.png';
+                        var previewId = getProductNextBatchId(p.n);
+
+                        return '<div class="prod_batch_card">' +
+                            '<div class="pbc_top">' +
+                                '<img class="pbc_img" src="' + imgSrc + '" alt="' + p.n + '">' +
+                                '<h3 class="pbc_name">' + p.n + '</h3>' +
+                                '<span class="pill_s ' + pillCls + '">In Stock: ' + qty + '</span>' +
+                            '</div>' +
+                            '<form class="pbc_form" data-prod="' + p.n + '" data-bid="' + previewId + '">' +
+                                '<div class="pbc_field">' +
+                                    '<label>Add Quantity</label>' +
+                                    '<input type="number" name="qty" min="1" placeholder="e.g. 5" required>' +
+                                '</div>' +
+                                '<div class="pbc_field">' +
+                                    '<label>Batch Date (Date Made)</label>' +
+                                    '<input type="date" name="made" value="' + todayStr + '" required>' +
+                                '</div>' +
+                                '<div class="pbc_field">' +
+                                    '<label>Expiry Date</label>' +
+                                    '<input type="date" name="exp" value="' + expStr + '" required>' +
+                                '</div>' +
+                                '<div class="pbc_id_box">' +
+                                    '<span>Auto Batch ID:</span>' +
+                                    '<b>' + previewId + '</b>' +
+                                '</div>' +
+                                '<button type="submit" class="btn_dark pbc_btn">Add Batch</button>' +
+                            '</form>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                function renderLogTable() {
+                    var batches = getBatches();
+                    populateBatchIdDropdown(batches);
+
+                    var html = '<tr><th>Batch ID</th><th>Product</th><th>Qty Added</th><th>Batch Date</th><th>Expiry Date</th><th>Status</th><th>Action</th></tr>';
+                    var shown = 0;
+
+                    batches.forEach(function (b, idx) {
+                        var st = getExpiryStatus(b);
+                        var matchStatus = (activeFilter === 'all' || st.key === activeFilter);
+                        var matchId = (activeBatchId === 'all' || b.id === activeBatchId);
+                        if (!matchStatus || !matchId) return;
+                        shown++;
+
+                        var actionCell = b.disposed
+                            ? '<span style="font-size:12px; color:#888;">Stock Deducted</span>'
+                            : '<button type="button" class="mini wide del" data-dispose="' + idx + '">Deduct Stock</button>';
+
+                        html += '<tr style="' + (b.disposed ? 'opacity:0.72;' : '') + '">' +
+                            '<td><b>' + b.id + '</b></td>' +
+                            '<td>' + b.product + '</td>' +
+                            '<td>+' + b.qty + '</td>' +
+                            '<td>' + formatDisplayDate(b.made) + '</td>' +
+                            '<td>' + formatDisplayDate(b.exp) + '</td>' +
+                            '<td><span class="pill_s ' + st.cls + '">' + st.label + '</span></td>' +
+                            '<td>' + actionCell + '</td>' +
+                        '</tr>';
+                    });
+
+                    if (!shown) {
+                        html += '<tr><td colspan="7" style="text-align:center; color:#888;">No batches </td></tr>';
+                    }
+                    logTbl.innerHTML = html;
+                }
+
+                if (filterWrap) {
+                    filterWrap.addEventListener('click', function (e) {
+                        var chip = e.target.closest('.bf_chip');
+                        if (!chip) return;
+                        filterWrap.querySelectorAll('.bf_chip').forEach(function (c) {
+                            c.classList.remove('active');
+                        });
+                        chip.classList.add('active');
+                        activeFilter = chip.getAttribute('data-filter');
+                        renderLogTable();
+                    });
+                }
+
+                if (batchIdSelect) {
+                    batchIdSelect.addEventListener('change', function () {
+                        activeBatchId = batchIdSelect.value;
+                        renderLogTable();
+                    });
+                }
+
+                grid.addEventListener('submit', function (e) {
+                    var form = e.target.closest('.pbc_form');
+                    if (!form) return;
+                    e.preventDefault();
+
+                    var prodName = form.getAttribute('data-prod');
+                    var batchId = form.getAttribute('data-bid');
+                    var qty = parseInt(form.elements['qty'].value, 10);
+                    var made = form.elements['made'].value;
+                    var exp = form.elements['exp'].value;
+
+                    if (!qty || qty < 1) return;
+
+                    if (exp <= made) {
+                        openModal({
+                            badge: 'Invalid Date',
+                            warn: true,
+                            alertOnly: true,
+                            title: 'Check Expiry Date',
+                            desc: 'The Expiry Date must be later than the Batch Date (Date Made).',
+                            confirmText: 'Okay, Fix Date'
+                        });
+                        return;
+                    }
+
+                    openModal({
+                        badge: 'Confirm New Batch',
+                        title: 'Verify Batch Details',
+                        desc: 'Please check if the batch information below is correct before saving:',
+                        summary:
+                            '<b>Batch ID:</b> ' + batchId + '<br>' +
+                            '<b>Product:</b> ' + prodName + '<br>' +
+                            '<b>Quantity to Add:</b> +' + qty + ' pcs<br>' +
+                            '<b>Batch Date:</b> ' + formatDisplayDate(made) + '<br>' +
+                            '<b>Expiry Date:</b> ' + formatDisplayDate(exp),
+                        confirmText: 'Yes, Save Batch',
+                        onConfirm: function () {
+                            var batches = getBatches();
+                            batches.unshift({
+                                id: batchId,
+                                product: prodName,
+                                qty: qty,
+                                made: made,
+                                exp: exp,
+                                disposed: false
+                            });
+                            localStorage.setItem('sh_batches', JSON.stringify(batches));
+
+                            var stock = getStockMap();
+                            stock[prodName] = (stock[prodName] || 0) + qty;
+                            saveStockMap(stock);
+
+                            renderCards();
+                            renderLogTable();
+                        }
+                    });
+                });
+
+                logTbl.addEventListener('click', function (e) {
+                    var btn = e.target.closest('[data-dispose]');
+                    if (!btn) return;
+
+                    var idx = parseInt(btn.getAttribute('data-dispose'), 10);
+                    var batches = getBatches();
+                    var batch = batches[idx];
+                    if (!batch || batch.disposed) return;
+
+                    openModal({
+                        badge: 'Stock Deduction Notice',
+                        warn: true,
+                        title: 'Deduct Batch Stock?',
+                        desc: 'This will subtract the batch quantity from current inventory, while keeping the batch record in the log:',
+                        summary:
+                            '<b>Batch ID:</b> ' + batch.id + '<br>' +
+                            '<b>Product:</b> ' + batch.product + '<br>' +
+                            '<b>Stock to Deduct:</b> -' + batch.qty + ' pcs<br>' +
+                            '<b>Expiry Date:</b> ' + formatDisplayDate(batch.exp),
+                        confirmText: 'Yes, Deduct Stock',
+                        onConfirm: function () {
+                            var latestBatches = getBatches();
+                            if (!latestBatches[idx] || latestBatches[idx].disposed) return;
+
+                            latestBatches[idx].disposed = true;
+                            localStorage.setItem('sh_batches', JSON.stringify(latestBatches));
+
+                            var stock = getStockMap();
+                            stock[batch.product] = Math.max(0, (stock[batch.product] || 0) - batch.qty);
+                            saveStockMap(stock);
+
+                            renderCards();
+                            renderLogTable();
+                        }
+                    });
+                });
+
+                renderCards();
+                renderLogTable();
+            })();
+        </script>
     </body>
 </html>
