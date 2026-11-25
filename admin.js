@@ -154,54 +154,6 @@
             }).join('');
         };
 
-        /* ----- Add Product (+ Add Photo) ----- */
-        var msg = function (m, bad) { var e = $('#ap_msg'); e.textContent = m; e.style.color = bad ? 'var(--err)' : 'var(--mar)'; };
-        $('#ap_pick').addEventListener('click', function () { $('#ap_file').click(); });
-        $('#ap_file').addEventListener('change', function () {
-            var f = this.files[0]; if (!f) return;
-            if (!/^image\//.test(f.type)) { msg('Please choose an image file.', 1); return; }
-            var r = new FileReader();
-            r.onload = function () {
-                var im = new Image();
-                im.onload = function () {
-                    var sc = Math.min(1, 600 / Math.max(im.width, im.height)), c = document.createElement('canvas');
-                    c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
-                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-                    photo = c.toDataURL('image/webp', .85);
-                    $('#ap_prev').style.backgroundImage = 'url(' + photo + ')'; $('#ap_fn').textContent = f.name; msg('');
-                };
-                im.src = r.result;
-            };
-            r.readAsDataURL(f);
-        });
-        $('#ap_clear').addEventListener('click', function () {
-            ['ap_name', 'ap_price', 'ap_stock', 'ap_desc'].forEach(function (id) { $('#' + id).value = ''; });
-            ['ap_name', 'ap_price', 'ap_stock'].forEach(function (id) { $('#' + id).classList.remove('invalid'); });
-            photo = ''; $('#ap_prev').style.backgroundImage = ''; $('#ap_fn').textContent = 'No photo selected'; $('#ap_file').value = '';
-            msg(''); $('#ap_name').focus();
-        });
-        $('#ap_save').addEventListener('click', function () {
-            var nm = $('#ap_name'), pr = $('#ap_price'), sk = $('#ap_stock'), bad = [];
-            [nm, pr, sk].forEach(function (i) { i.classList.remove('invalid'); });
-            if (!nm.value.trim()) bad.push(nm);
-            if (!(+pr.value > 0)) bad.push(pr);
-            if (sk.value === '' || +sk.value < 0) bad.push(sk);
-            if (bad.length) { bad.forEach(function (i) { i.classList.add('invalid'); }); bad[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); bad[0].focus({ preventScroll: true }); msg('Please fill in the name, price and stock.', 1); return; }
-            if (cat().some(function (c) { return SH.norm(c.n) === SH.norm(nm.value); })) { nm.classList.add('invalid'); msg('That product already exists.', 1); return; }
-            var list = S.get('sh_products', []);
-            list.push({ id: 'p' + Date.now(), n: nm.value.trim(), p: +pr.value, s: Math.floor(+sk.value), d: $('#ap_desc').value.trim(), img: photo });
-            S.set('sh_products', list);
-            var st = SH.stock(); st[nm.value.trim()] = Math.floor(+sk.value); SH.saveStock(st);
-            ['ap_name', 'ap_price', 'ap_stock', 'ap_desc'].forEach(function (id) { $('#' + id).value = ''; });
-            photo = ''; $('#ap_prev').style.backgroundImage = ''; $('#ap_fn').textContent = 'No photo selected'; $('#ap_file').value = '';
-            msg('Product added! It now shows on the home page and in the inventory.'); drawDash();
-        });
-        $('#reset').addEventListener('click', function () {
-            if (!window.confirm('Reset the sample data? The sample orders are replaced and the sample stock levels are restored.')) return;
-            var n = seed(true);
-            drawDash();
-            SH.toast(n + ' sample orders restored.');
-        });
         drawDash();
     }
 

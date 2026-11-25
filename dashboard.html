@@ -64,29 +64,6 @@
                 </div>
             </div>
 
-            <!--Add product + Add photo-->
-            <div class="panel2" id="addProduct">
-                <h2>Add Product</h2>
-                <div class="ap_grid">
-                    <div><label for="ap_name">Product name</label><input type="text" id="ap_name" placeholder="e.g. Double Choco Chunk"></div>
-                    <div><label for="ap_price">Price (&#8369;)</label><input type="number" id="ap_price" min="1" placeholder="40"></div>
-                    <div><label for="ap_stock">Starting stock</label><input type="number" id="ap_stock" min="0" placeholder="30"></div>
-                    <div class="full"><label for="ap_desc">Description (optional)</label><input type="text" id="ap_desc" placeholder="Soft and chewy cookies..."></div>
-                    <div class="full">
-                        <label>Add Photo</label>
-                        <div class="photo_row">
-                            <div class="photo_prev" id="ap_prev"></div>
-                            <input type="file" id="ap_file" accept="image/*" hidden>
-                            <button type="button" class="btn_dark" id="ap_pick">Add Photo</button>
-                            <span id="ap_fn">No photo selected</span>
-                        </div>
-                    </div>
-                </div>
-                <p class="ap_msg" id="ap_msg"></p>
-                <button type="button" class="btn_dark" id="ap_save">Add Product</button>
-                <button type="button" class="mini wide" id="ap_clear" style="margin-left:10px;height:44px">Clear All</button>
-            </div>
-
             <div class="panel2"><h2>Recent orders</h2><div class="tbl_wrap"><table class="tbl" id="recent"></table></div>
                 <p><a href="admin_orders.html" style="color:var(--mar);text-decoration:underline">Manage all orders</a></p></div>
             <button class="btn_dark" id="reset">Reset sample data</button>
