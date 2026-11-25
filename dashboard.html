@@ -20,7 +20,7 @@
                 <div><a class="nav1" href="admin_orders.html">Orders</a></div>
                 <div><a class="nav1">Menu</a></div>
 
-                    <!-- Temporary login button-->
+                <!-- Temporary login button-->
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
@@ -42,7 +42,27 @@
             </div>
 
             <div class="panel2"><h2>Stock levels</h2><div id="stockbars"></div></div>
-            <div class="panel2"><h2>Inventory</h2><div class="tbl_wrap"><table class="tbl" id="inv"></table></div></div>
+
+            <!-- Inventory Expiry Monitor (replaces old Inventory table) -->
+            <div class="panel2" id="exp_tracker_panel">
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                    <div>
+                        <h2 style="margin:0;">Inventory Expiry Monitor</h2>
+                    </div>
+                    <a href="inventory.html" class="btn_dark" style="text-decoration:none; padding:9px 18px; border-radius:999px; font-size:13px;">Manage Batches &rarr;</a>
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;" id="dash_exp_filters">
+                    <button type="button" class="mini wide" data-expf="alerts" style="background:#7a2e4d; color:#fff; border-color:#7a2e4d;">Expiring &amp; Expired</button>
+                    <button type="button" class="mini wide" data-expf="low">Expiring Soon (&le;3 days)</button>
+                    <button type="button" class="mini wide" data-expf="expired">Expired</button>
+                    <button type="button" class="mini wide" data-expf="all">All Active Batches</button>
+                </div>
+
+                <div class="tbl_wrap">
+                    <table class="tbl" id="dash_exp_tbl"></table>
+                </div>
+            </div>
 
             <!--Add product + Add photo-->
             <div class="panel2" id="addProduct">
@@ -73,5 +93,114 @@
         </div>
         <script src="site.js"></script>
         <script src="admin.js"></script>
+        <script>
+            (function () {
+                var tbl = document.getElementById('dash_exp_tbl');
+                var filterBar = document.getElementById('dash_exp_filters');
+                if (!tbl) return;
+
+                var activeExpFilter = 'alerts';
+
+                function formatDate(iso) {
+                    if (!iso) return '';
+                    var d = new Date(iso + 'T00:00:00');
+                    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                }
+
+                function getBatchState(b) {
+                    var now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    var exp = new Date(b.exp + 'T00:00:00');
+                    var diff = Math.ceil((exp - now) / 86400000);
+
+                    if (diff < 0) {
+                        var overdue = Math.abs(diff);
+                        return {
+                            key: 'expired',
+                            diff: diff,
+                            daysText: overdue === 1 ? '1 day ago' : overdue + ' days ago',
+                            label: 'Expired',
+                            cls: 'out'
+                        };
+                    }
+                    if (diff <= 3) {
+                        return {
+                            key: 'low',
+                            diff: diff,
+                            daysText: diff === 0 ? 'Expires today' : (diff === 1 ? 'In 1 day' : 'In ' + diff + ' days'),
+                            label: 'Expiring Soon',
+                            cls: 'low'
+                        };
+                    }
+                    return {
+                        key: 'ok',
+                        diff: diff,
+                        daysText: 'In ' + diff + ' days',
+                        label: 'Fresh',
+                        cls: 'ok'
+                    };
+                }
+
+                function renderExpiryMonitor() {
+                    var batches = [];
+                    try {
+                        batches = JSON.parse(localStorage.getItem('sh_batches') || '[]');
+                    } catch (e) { batches = []; }
+
+                    var active = batches.filter(function (b) { return !b.disposed; }).map(function (b) {
+                        return { batch: b, state: getBatchState(b) };
+                    });
+
+                    active.sort(function (a, b) { return a.state.diff - b.state.diff; });
+
+                    var filtered = active.filter(function (item) {
+                        if (activeExpFilter === 'alerts') return item.state.key === 'expired' || item.state.key === 'low';
+                        if (activeExpFilter === 'low') return item.state.key === 'low';
+                        if (activeExpFilter === 'expired') return item.state.key === 'expired';
+                        return true;
+                    });
+
+                    var html = '<tr><th>Batch ID</th><th>Product</th><th>Batch Qty</th><th>Expiry Date</th><th>Time Left</th><th>Status</th></tr>';
+                    if (!filtered.length) {
+                        var msg = activeExpFilter === 'alerts'
+                            ? 'No expired or soon-to-expire batches right now.'
+                            : 'No batches';
+                        html += '<tr><td colspan="6" style="text-align:center; color:#888;">' + msg + '</td></tr>';
+                    } else {
+                        filtered.forEach(function (item) {
+                            var b = item.batch, st = item.state;
+                            html += '<tr>' +
+                                '<td><b>' + b.id + '</b></td>' +
+                                '<td>' + b.product + '</td>' +
+                                '<td>' + b.qty + ' pcs</td>' +
+                                '<td>' + formatDate(b.exp) + '</td>' +
+                                '<td><b>' + st.daysText + '</b></td>' +
+                                '<td><span class="pill_s ' + st.cls + '">' + st.label + '</span></td>' +
+                            '</tr>';
+                        });
+                    }
+                    tbl.innerHTML = html;
+                }
+
+                if (filterBar) {
+                    filterBar.addEventListener('click', function (e) {
+                        var btn = e.target.closest('[data-expf]');
+                        if (!btn) return;
+                        filterBar.querySelectorAll('[data-expf]').forEach(function (b) {
+                            b.style.background = '';
+                            b.style.color = '';
+                            b.style.borderColor = '';
+                        });
+                        btn.style.background = '#7a2e4d';
+                        btn.style.color = '#fff';
+                        btn.style.borderColor = '#7a2e4d';
+                        activeExpFilter = btn.getAttribute('data-expf');
+                        renderExpiryMonitor();
+                    });
+                }
+
+                renderExpiryMonitor();
+            })();
+        </script>
     </body>
 </html>
