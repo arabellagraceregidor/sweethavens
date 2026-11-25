@@ -3,6 +3,42 @@
     <head>
         <title>SweetHavens - Schedules</title>
         <link rel="stylesheet" href="home.css">
+        <style>
+            /* Para 100% magkapareho ang hitsura ng <select> sa pink rounded <input> ng home.css */
+            #sched_form .ap_grid select {
+                width: 100%;
+                padding: 12px 16px;
+                border: 1.5px solid #f2b5ce;
+                border-radius: 14px;
+                background-color: #fff6fa;
+                color: #5c1f38;
+                font-family: inherit;
+                font-size: 14px;
+                outline: none;
+                cursor: pointer;
+                box-sizing: border-box;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            }
+            #sched_form .ap_grid select:focus {
+                border-color: #ff69b4;
+                box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.15);
+            }
+            #sched_form .btn_dark {
+                margin-top: 14px;
+            }
+            .sched_saved_msg {
+                display: inline-block;
+                margin-left: 12px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #2e7d32;
+                opacity: 0;
+                transition: opacity 0.25s ease;
+            }
+            .sched_saved_msg.show {
+                opacity: 1;
+            }
+        </style>
     </head>
     <body>
         <header>
@@ -20,7 +56,7 @@
                 <div><a class="nav1" href="admin_orders.html">Orders</a></div>
                 <div><a class="nav1">Menu</a></div>
 
-                    <!-- Temporary login button-->
+                <!-- Temporary login button-->
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
@@ -42,7 +78,7 @@
                         <tr>
                             <td>Technological University of the Philippines - Manila</td>
                             <td>Ermita, Manila</td>
-                            <td><span class="pill_s">9:00 AM - 5:00 PM</span></td>
+                            <td><span class="pill_s" id="display_sched">9:00 AM - 5:00 PM</span></td>
                         </tr>
                     </table>
                 </div>
@@ -50,25 +86,90 @@
 
             <div class="panel2">
                 <h2>Update Store Hours</h2>
-                <form>
+                <form id="sched_form">
                     <div class="ap_grid">
-                        <div class="full">
-                            <label for="branch">Branch Name</label>
-                            <input type="text" list="name" id="branch" name="branch" placeholder="Select a branch" required>
-                            <datalist id="name">
-                                <option value="Technological University of the Philippines - Manila">
-                            </datalist>
+                        <div>
+                            <label for="open_time">Opening Time</label>
+                            <select id="open_time" name="open_time" required></select>
                         </div>
-                        <div class="full">
-                            <label for="sched">New Schedule</label>
-                            <input type="text" name="sched" id="sched" placeholder="9:00 AM - 5:00 PM" required>
+                        <div>
+                            <label for="close_time">Closing Time</label>
+                            <select id="close_time" name="close_time" required></select>
                         </div>
                     </div>
+                    <p id="sched_error" style="color:#c62828; font-size:13px; margin:8px 0 0; display:none;">
+                        Closing time must be later than opening time.
+                    </p>
                     <button type="submit" class="btn_dark">Update</button>
+                    <span class="sched_saved_msg" id="sched_msg">Store hours updated!</span>
                 </form>
             </div>
         </div>
         <script src="site.js"></script>
         <script src="admin.js"></script>
+        <script>
+            (function () {
+                var TIMES = [
+                    '6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM',
+                    '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM',
+                    '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+                    '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+                    '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
+                    '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+                    '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM',
+                    '8:00 PM', '8:30 PM', '9:00 PM', '10:00 PM'
+                ];
+
+                var openSel = document.getElementById('open_time');
+                var closeSel = document.getElementById('close_time');
+                var display = document.getElementById('display_sched');
+                var err = document.getElementById('sched_error');
+                var msg = document.getElementById('sched_msg');
+                var form = document.getElementById('sched_form');
+
+                TIMES.forEach(function (t, idx) {
+                    openSel.add(new Option(t, idx));
+                    closeSel.add(new Option(t, idx));
+                });
+
+                // Default: 9:00 AM - 5:00 PM
+                openSel.value = '6';
+                closeSel.value = '22';
+
+                var saved = JSON.parse(localStorage.getItem('sh_store_hours_obj') || 'null');
+                if (saved) {
+                    openSel.value = saved.openIdx;
+                    closeSel.value = saved.closeIdx;
+                    display.textContent = saved.label;
+                }
+
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var oIdx = parseInt(openSel.value, 10);
+                    var cIdx = parseInt(closeSel.value, 10);
+
+                    if (cIdx <= oIdx) {
+                        err.style.display = 'block';
+                        return;
+                    }
+
+                    err.style.display = 'none';
+                    var label = TIMES[oIdx] + ' - ' + TIMES[cIdx];
+                    display.textContent = label;
+
+                    localStorage.setItem('sh_store_hours', label);
+                    localStorage.setItem('sh_store_hours_obj', JSON.stringify({
+                        openIdx: oIdx,
+                        closeIdx: cIdx,
+                        label: label
+                    }));
+
+                    msg.classList.add('show');
+                    setTimeout(function () {
+                        msg.classList.remove('show');
+                    }, 2200);
+                });
+            })();
+        </script>
     </body>
 </html>
