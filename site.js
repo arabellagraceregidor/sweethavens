@@ -502,19 +502,36 @@
     }
 
     /* ---- home page: show products the admin added (after list.js made the others) ---- */
-    function injectCustom() {
-        var box = $('#classics'); if (!box) return;
+      function injectCustom() {
+        var weeklyBox = $('#product-grid');
+        var classicsBox = $('#classics');
+        if (!weeklyBox && !classicsBox) return;
+
         var cols = ['#E08EAA', '#93494A', '#CEA386', '#75672C', '#A15D24', '#554C4E'];
-        customList().forEach(function (p, i) {
-            var t = document.getElementById(i % 2 ? 'card-template2' : 'card-template'); if (!t) return;
+        var weeklyIdx = 0;
+        var classicIdx = 0;
+
+        customList().forEach(function (p) {
+            var typeStr = String(p.t || '').trim().toLowerCase();
+            var isWeekly = typeStr.indexOf('weekly') > -1;
+            var targetBox = isWeekly ? weeklyBox : classicsBox;
+            if (!targetBox) return;
+
+            var idx = isWeekly ? weeklyIdx++ : classicIdx++;
+            var t = document.getElementById(idx % 2 ? 'card-template2' : 'card-template');
+            if (!t) return;
+
             var k = t.content.cloneNode(true), im = $('.product-img', k);
-            im.src = p.img || 'assets/Logo.png'; im.alt = p.n;
-            $('.product-card', k).style.backgroundColor = cols[i % cols.length];
-            $('.card-header', k).textContent = p.n; $('.card-notif', k).textContent = 'New!';
+            im.src = p.img || 'assets/Logo.png';
+            im.alt = p.n;
+            $('.product-card', k).style.backgroundColor = cols[idx % cols.length];
+            $('.card-header', k).textContent = p.n;
+            $('.card-notif', k).textContent = isWeekly ? 'This Week only!' : 'New!';
             $('.card-p', k).textContent = p.d || 'Freshly baked and ready to order.';
-            $('.info-btn', k).textContent = 'Learn More'; $('.order-btn', k).textContent = 'Order Now';
+            $('.info-btn', k).textContent = 'Learn More';
+            $('.order-btn', k).textContent = 'Order Now';
             $('.cart-btn', k).innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>Add to cart';
-            box.appendChild(k);
+            targetBox.appendChild(k);
         });
     }
     function onReady(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
