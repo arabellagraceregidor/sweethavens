@@ -42,9 +42,14 @@
         </article>
 
         <!--Weekly bakes section-->
-        <div id="weekly">
-            <div id="main_header">
-                <p id="date">Sept 14-20</p>
+            <div id="weekly" style="padding-top: 40px; margin-top: 10px;">
+                <div id="main_header" style="margin-left: 5%; margin-right: 5%;">
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:10px;">
+                    <p id="date" style="margin:0;"></p>
+                    <p id="store_hours_pill" style="margin:0; background:#fff0f6; border:1px solid #f2b5ce; color:#7a2e4d; padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600;">
+                        Store Hours: 3:00 PM - 6:30 PM
+                    </p>
+                </div>
                 <h1 class="products_header">Weekly bakes</h1>
                 <p>New and returning flavors every week. Try them out!</p>
             </div>
@@ -110,5 +115,43 @@
         </footer>
         <script src="list.js"></script>
         <script src="site.js"></script>
+
+        <script>
+    (function () {
+        var dateEl = document.getElementById('date');
+        var hoursEl = document.getElementById('store_hours_pill');
+
+        // 1. Auto-compute current week (Sunday to Saturday)
+        if (dateEl) {
+            var now = new Date();
+            var sun = new Date(now);
+            sun.setDate(now.getDate() - now.getDay()); // Sunday
+            var sat = new Date(sun);
+            sat.setDate(sun.getDate() + 6); // Saturday
+
+            var sunM = sun.toLocaleDateString('en-US', { month: 'short' });
+            var satM = sat.toLocaleDateString('en-US', { month: 'short' });
+
+            dateEl.textContent = (sunM === satM)
+                ? (sunM + ' ' + sun.getDate() + '–' + sat.getDate())
+                : (sunM + ' ' + sun.getDate() + ' – ' + satM + ' ' + sat.getDate());
+        }
+
+        // 2. Pull live opening & closing time saved in Schedule Management
+        if (hoursEl) {
+            var savedHours = localStorage.getItem('sh_store_hours');
+            if (!savedHours) {
+                try {
+                    var obj = JSON.parse(localStorage.getItem('sh_store_hours_obj') || 'null');
+                    if (obj && obj.open && obj.close) {
+                        savedHours = obj.open + ' – ' + obj.close;
+                    }
+                } catch (e) {}
+            }
+            hoursEl.textContent = 'Store Hours: ' + (savedHours || '8:00 AM – 8:00 PM');
+        }
+    })();
+</script>
+
     </body>
 </html>
