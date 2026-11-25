@@ -353,37 +353,56 @@
                 $('#cp_editPanel').hidden = false;
                 $('#cp_editPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            if (rm) {
+if (rm) {
                 var key = rm.getAttribute('data-rm'), isCustom = rm.getAttribute('data-custom') === '1';
-                if (!confirm('Delete this product?')) return;
-
                 var targetItem = isCustom
                     ? S.get('sh_products', []).filter(function (p) { return p.id === key; })[0]
                     : cat().filter(function (c) { return c.n === key; })[0];
                 var deletedName = targetItem ? targetItem.n : key;
+                var currentStock = SH.stock()[deletedName] || 0;
+                var batchCount = S.get('sh_batches', []).filter(function (b) {
+                    return SH.norm(b.product) === SH.norm(deletedName);
+                }).length;
 
-                if (isCustom) {
-                    S.set('sh_products', S.get('sh_products', []).filter(function (p) { return p.id !== key; }));
-                } else {
-                    var ed = S.get('sh_edits', {});
-                    ed[key] = ed[key] || {};
-                    ed[key].deleted = true;
-                    S.set('sh_edits', ed);
-                }
+                var delModal = $('#cp_del_modal');
+                $('#cp_del_summary').innerHTML =
+                    '<b>Product:</b> ' + esc(deletedName) + '<br>' +
+                    '<b>Price:</b> ' + (targetItem ? fmt(targetItem.p) : '-') + '<br>' +
+                    '<b>Current Stock:</b> ' + currentStock + ' pcs<br>' +
+                    '<b>Logged Batches to Remove:</b> ' + batchCount + ' batch(es)';
 
-                // Alisin din sa sh_batches ang lahat ng logged batches ng dinelete na product
-                var remainingBatches = S.get('sh_batches', []).filter(function (b) {
-                    return SH.norm(b.product) !== SH.norm(deletedName);
-                });
-                S.set('sh_batches', remainingBatches);
+                delModal.classList.add('open');
 
-                // I-reset din ang stock entry ng dinelete na product
-                var st = SH.stock();
-                delete st[deletedName];
-                SH.saveStock(st);
+                $('#cp_del_cancel').onclick = function () {
+                    delModal.classList.remove('open');
+                };
+                delModal.onclick = function (ev) {
+                    if (ev.target === delModal) delModal.classList.remove('open');
+                };
+                $('#cp_del_confirm').onclick = function () {
+                    delModal.classList.remove('open');
 
-                if (editKey === key) closeEdit();
-                SH.toast('Product and its batches removed'); drawList();
+                    if (isCustom) {
+                        S.set('sh_products', S.get('sh_products', []).filter(function (p) { return p.id !== key; }));
+                    } else {
+                        var ed = S.get('sh_edits', {});
+                        ed[key] = ed[key] || {};
+                        ed[key].deleted = true;
+                        S.set('sh_edits', ed);
+                    }
+
+                    var remainingBatches = S.get('sh_batches', []).filter(function (b) {
+                        return SH.norm(b.product) !== SH.norm(deletedName);
+                    });
+                    S.set('sh_batches', remainingBatches);
+
+                    var st = SH.stock();
+                    delete st[deletedName];
+                    SH.saveStock(st);
+
+                    if (editKey === key) closeEdit();
+                    SH.toast('Product and its batches removed'); drawList();
+                };
             }
         });
         drawList();

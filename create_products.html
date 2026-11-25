@@ -3,6 +3,86 @@
     <head>
         <title>SweetHavens - Create Products</title>
         <link rel="stylesheet" href="home.css">
+        <style>
+            .sh_modal_backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(45, 18, 29, 0.45);
+                z-index: 999;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            }
+            .sh_modal_backdrop.open {
+                display: flex;
+            }
+            .sh_modal_card {
+                background: #fff8fb;
+                border: 2px solid #f2b5ce;
+                border-radius: 22px;
+                max-width: 400px;
+                width: 100%;
+                padding: 24px 22px;
+                box-shadow: 0 16px 36px rgba(92, 31, 56, 0.22);
+                text-align: center;
+                animation: popCard 0.18s ease-out;
+            }
+            @keyframes popCard {
+                from { transform: scale(0.94); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+            .sh_modal_badge {
+                display: inline-block;
+                background: #ffe2e2;
+                color: #a62626;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.4px;
+                text-transform: uppercase;
+                padding: 4px 12px;
+                border-radius: 999px;
+                margin-bottom: 8px;
+            }
+            .sh_modal_card h3 {
+                margin: 0 0 6px;
+                color: #7a2e4d;
+                font-size: 19px;
+            }
+            .sh_modal_card p {
+                margin: 0 0 14px;
+                font-size: 13px;
+                color: #6e4757;
+            }
+            .sh_modal_summary {
+                background: #ffffff;
+                border: 1px solid #f2b5ce;
+                border-radius: 14px;
+                padding: 12px 14px;
+                text-align: left;
+                font-size: 13px;
+                color: #5c1f38;
+                line-height: 1.75;
+                margin-bottom: 18px;
+            }
+            .sh_modal_actions {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+            .btn_cancel_soft {
+                background: #ffe3ef;
+                color: #7a2e4d;
+                border: 1px solid #f2b5ce;
+                border-radius: 999px;
+                padding: 10px 20px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .btn_cancel_soft:hover {
+                background: #ffd0e4;
+            }
+        </style>
     </head>
     <body>
         <header>
@@ -97,6 +177,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- SweetHavens Delete Confirmation Pop-up Card -->
+        <div class="sh_modal_backdrop" id="cp_del_modal">
+            <div class="sh_modal_card">
+                <span class="sh_modal_badge">Delete Warning</span>
+                <h3>Delete Product?</h3>
+                <p>This will remove the product from the menu, inventory, and logged batches:</p>
+                <div class="sh_modal_summary" id="cp_del_summary"></div>
+                <div class="sh_modal_actions">
+                    <button type="button" class="btn_cancel_soft" id="cp_del_cancel">Cancel</button>
+                    <button type="button" class="btn_dark" id="cp_del_confirm">Yes, Delete Product</button>
+                </div>
+            </div>
+        </div>
+
         <script src="site.js"></script>
         <script src="admin.js"></script>
     </body>

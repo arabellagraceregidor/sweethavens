@@ -342,7 +342,15 @@
 
     /* Add back button to header if not already present */
     /* the admin dashboard and the customer home page already have Log Out, so no back icon there */
-    var NO_BACK = ['dashboard.html', 'home_page.html', 'index.html'];
+    var NO_BACK = [
+        'dashboard.html',
+        'home_page.html',
+        'index.html',
+        'create_products.html',
+        'inventory.html',
+        'schedule_mngmt.html',
+        'admin_orders.html'
+    ];
     var herePage = location.pathname.split('/').pop() || 'home_page.html';
     /* the pages visited in this tab, so Back never returns a signed-in user to log in / sign up / the start page */
     var BLOCK_BACK = ['index.html', 'login.html', 'signup.html', 'forgot_password.html'];
