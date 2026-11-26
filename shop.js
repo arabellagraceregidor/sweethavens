@@ -466,7 +466,11 @@
                 return String(rf.orderId) === String(o.id) && Number(rf.itemIndex) === Number(i) && rf.status !== 'Rejected';
             })[0] || null;
         };
-        var isPaid = function (o) { return o.paid === true || (o.paid == null && !/cash|cod/i.test(o.pay || '')); };
+        var isCashLike = function (o) { return /cash|cod|pay on pick up/i.test(o.pay || ''); };
+        var isPaid = function (o) {
+            if (o.status === 'Completed' || o.status === 'Delivered' || o.status === 'Picked up') return true;
+            return o.paid === true || (o.paid == null && !isCashLike(o));
+        };
         var orderCard = function (o) {
             var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled', returned = o.status === 'Returned';
             var head = gone ? 'Order cancelled' : returned ? 'Returned' : o.status === 'Pick Up' ? 'Picked up by rider' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
@@ -526,18 +530,21 @@
             var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status, o.paid, o.riderLocation]; })) + JSON.stringify(allReviews().map(function (r) { return r.id; }));
             if (!force && sig === lastSig) return;
             lastSig = sig;
+            var isToPay = function (o) {
+                return !isPaid(o) && !isCompletedOrder(o) && o.status !== 'Cancelled' && o.status !== 'Returned';
+            };
             var list = all.filter(function (o) {
-                if (tab === 'To Pay') return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned';
-                if (tab === 'To Ship') return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up');
-                if (tab === 'To Receive') return (o.status === 'Ready' || o.status === 'Pick Up') && o.mode === 'Delivery';
+                if (tab === 'To Pay') return isToPay(o);
+                if (tab === 'To Ship') return o.status === 'Pending' || o.status === 'Preparing';
+                if (tab === 'To Receive') return o.status === 'Ready' || o.status === 'Pick Up';
                 if (tab === 'Return') return o.status === 'Returned';
                 return true;
             });
             var counts = {
                 'All': all.length,
-                'To Pay': all.filter(function (o) { return !isPaid(o) && o.status !== 'Cancelled' && o.status !== 'Returned'; }).length,
-                'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing' || (o.status === 'Ready' && o.mode === 'Pick Up'); }).length,
-                'To Receive': all.filter(function (o) { return (o.status === 'Ready' || o.status === 'Pick Up') && o.mode === 'Delivery'; }).length,
+                'To Pay': all.filter(isToPay).length,
+                'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing'; }).length,
+                'To Receive': all.filter(function (o) { return o.status === 'Ready' || o.status === 'Pick Up'; }).length,
                 'To Review': all.filter(function (o) { return isCompletedOrder(o); }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
                 'Return': all.filter(function (o) { return o.status === 'Returned'; }).length
             };
