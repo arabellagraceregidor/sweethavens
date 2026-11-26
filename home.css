@@ -1096,3 +1096,12 @@ main:has(> form:first-of-type) > h1{ max-width:720px; margin-left:auto; margin-r
 .photo_row[data-upload] .up_tick{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--card); color:var(--mar); font:700 15px/1 var(--ari); animation:cartCheckPop .38s cubic-bezier(.2,.8,.2,1) both; }
 .up_size{ font:14px var(--ari); color:var(--ph); }
 .up_size.on{ color:var(--mar); font-weight:700; }
+
+/* Hide Back button & shift SweetHavens logo left on main nav pages */
+body[data-no-back] header > a:first-child,
+body[data-no-back] header > button:first-child,
+body[data-no-back] #h_title-cont ~ a,
+body[data-no-back] header [class*="back"],
+body[data-no-back] header [id*="back"] {
+    display: none !important;
+}
