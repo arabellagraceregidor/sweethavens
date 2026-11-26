@@ -160,26 +160,62 @@
             else $('#refund_item').textContent = 'Order #' + refundOrder.id + ' · ' + refundItem.name;
             refundForm.addEventListener('submit', function (e) {
                 e.preventDefault();
-                var files = $('#refund_evidence').files, reason = $('#refund_reason').value, details = $('#refund_details').value.trim(), msg = $('#refund_msg');
-                if (reason === 'Write my own reason') reason = details;
-                if (!refundItem || !reason || !files.length) { msg.textContent = 'Choose or write a reason and attach at least one picture or video.'; return; }
+                var files = $('#refund_evidence').files, rawReason = $('#refund_reason').value, details = $('#refund_details').value.trim(), msg = $('#refund_msg');
+                [$('#refund_reason'), $('#refund_details'), $('#refund_prev')].forEach(function (el) { if (el) el.classList.remove('invalid'); });
+                msg.textContent = '';
+
+                if (!refundItem) { msg.textContent = 'Order item was not found.'; return; }
+                if (!rawReason) { $('#refund_reason').classList.add('invalid'); msg.textContent = 'Please choose a reason.'; $('#refund_reason').focus(); return; }
+                if (!details) { $('#refund_details').classList.add('invalid'); msg.textContent = 'Please enter extra details or your reason.'; $('#refund_details').focus(); return; }
+                if (!files || !files.length) { $('#refund_prev').classList.add('invalid'); msg.textContent = 'Please attach at least one picture or video.'; return; }
+
+                var reason = rawReason === 'Write my own reason' ? details : rawReason;
                 var evidence = [];
                 for (var i = 0; i < files.length; i++) {
                     if (!(/^image\//.test(files[i].type) || /^video\//.test(files[i].type))) { msg.textContent = 'Evidence must be a picture or video.'; return; }
                 }
+
+                var saveRequests = function () {
+                    var requests = S.get('sh_refunds', []);
+                    var reqId = 'rf' + Date.now();
+                    requests.push({ id: reqId, orderId: refundOrder.id, itemIndex: itemIndex, product: refundItem.name, userName: user.name,
+                        reason: reason, details: details, evidence: evidence, status: 'Requested', date: new Date().toISOString() });
+                    S.set('sh_refunds', requests);
+                    if (!S.get('sh_refunds', []).some(function (x) { return x.id === reqId; })) {
+                        msg.textContent = 'The evidence file is too large to save. Please choose a smaller picture or video and try again.';
+                        return;
+                    }
+                    try { sessionStorage.setItem('sh_flash', 'Refund request submitted.'); } catch (x) {}
+                    location.href = 'my_orders.html';
+                };
+
                 var remaining = files.length;
                 Array.prototype.forEach.call(files, function (file) {
                     var reader = new FileReader();
                     reader.onload = function () {
-                        evidence.push({ name: file.name, type: file.type, data: reader.result }); remaining--;
-                        if (remaining) return;
-                        var requests = S.get('sh_refunds', []);
-                        requests.push({ id: 'rf' + Date.now(), orderId: refundOrder.id, itemIndex: itemIndex, product: refundItem.name, userName: user.name,
-                            reason: reason, details: details, evidence: evidence, status: 'Requested', date: new Date().toISOString() });
-                        S.set('sh_refunds', requests);
-                        if (!S.get('sh_refunds', []).some(function (x) { return x.id === requests[requests.length - 1].id; })) { msg.textContent = 'The evidence file could not be saved. Please choose a smaller picture or video and try again.'; return; }
-                        try { sessionStorage.setItem('sh_flash', 'Refund request submitted.'); } catch (x) {}
-                        location.href = 'my_orders.html';
+                        if (/^image\//.test(file.type)) {
+                            var img = new Image();
+                            img.onload = function () {
+                                var max = 800, s = Math.min(1, max / Math.max(img.width, img.height));
+                                var cv = document.createElement('canvas');
+                                cv.width = Math.round(img.width * s);
+                                cv.height = Math.round(img.height * s);
+                                cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                                evidence.push({ name: file.name, type: 'image/webp', data: cv.toDataURL('image/webp', 0.8) });
+                                remaining--;
+                                if (!remaining) saveRequests();
+                            };
+                            img.onerror = function () {
+                                evidence.push({ name: file.name, type: file.type, data: reader.result });
+                                remaining--;
+                                if (!remaining) saveRequests();
+                            };
+                            img.src = reader.result;
+                        } else {
+                            evidence.push({ name: file.name, type: file.type, data: reader.result });
+                            remaining--;
+                            if (!remaining) saveRequests();
+                        }
                     };
                     reader.onerror = function () { msg.textContent = 'Could not read the selected evidence file.'; };
                     reader.readAsDataURL(file);
