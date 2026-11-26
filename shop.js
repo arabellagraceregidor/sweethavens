@@ -485,7 +485,7 @@
             var lines = o.items.map(function (i) {
                 return '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>' + fmt(i.price) + '</span></div><span class="oc_qty">x' + i.qty + '</span></div>';
             }).join('');
-            var rider = o.mode === 'Delivery' && (o.status === 'Ready' || o.status === 'Pick Up') ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
+            var rider = ''; 
             var note = '';
             if (gone) {
                 note = '<p class="oc_note">Reason: <b>' + esc(o.cancelReason || 'Not stated') + '</b>';
