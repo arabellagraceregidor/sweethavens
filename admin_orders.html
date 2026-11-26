@@ -3,6 +3,217 @@
     <head>
         <title>SweetHavens - Order Management</title>
         <link rel="stylesheet" href="home.css">
+        <style>
+            /* Order Management Enhanced UI */
+            #adminOrders {
+                max-width: 1260px;
+                margin: 28px auto 60px;
+                padding: 0 24px;
+                box-sizing: border-box;
+            }
+
+            #adminOrders h1 {
+                margin-bottom: 6px;
+                letter-spacing: 0.4px;
+            }
+
+            #adminOrders .sub {
+                margin-top: 0;
+                margin-bottom: 22px;
+                font-size: 15px;
+                opacity: 0.85;
+            }
+
+            /* Filter Pills & Search Bar */
+            #adminOrders .filters {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            #adminOrders .filters button {
+                padding: 8px 16px;
+                border-radius: 999px;
+                border: 1.5px solid #f0b6d1;
+                background: #fff7fb;
+                color: #8c3746;
+                font-weight: 600;
+                font-size: 13.5px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            #adminOrders .filters button:hover {
+                background: #ffe3f1;
+                border-color: #e08ab4;
+                transform: translateY(-1px);
+            }
+
+            #adminOrders .filters button.active,
+            #adminOrders .filters button[aria-pressed="true"] {
+                background: linear-gradient(135deg, #964253, #7d3140);
+                color: #ffffff;
+                border-color: #7d3140;
+                box-shadow: 0 4px 12px rgba(140, 55, 70, 0.22);
+            }
+
+            #adminOrders .filters input[type="text"],
+            #adminOrders .filters input[type="search"] {
+                margin-left: auto;
+                min-width: 240px;
+                padding: 9px 16px;
+                border-radius: 999px;
+                border: 1.5px solid #e9a3c4;
+                background: #ffffff;
+                color: #4a2530;
+                font-size: 13.5px;
+                outline: none;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            #adminOrders .filters input:focus {
+                border-color: #ff69b4;
+                box-shadow: 0 0 0 3px rgba(255, 136, 183, 0.25);
+            }
+
+            /* Elevated Table Panel */
+            #adminOrders .panel2 {
+                background: linear-gradient(180deg, #ffffff 0%, #fff9fc 100%);
+                border: 1.5px solid #f3b6d2;
+                border-radius: 24px;
+                padding: 8px 16px 16px;
+                box-shadow:
+                    0 10px 28px rgba(140, 55, 70, 0.08),
+                    0 0 18px rgba(255, 217, 238, 0.45);
+                overflow: hidden;
+            }
+
+            #adminOrders .tbl_wrap {
+                overflow-x: auto;
+            }
+
+            #adminOrders .tbl {
+                width: 100%;
+                border-collapse: collapse;
+                text-align: left;
+                font-size: 14px;
+            }
+
+            #adminOrders .tbl th {
+                padding: 15px 14px;
+                color: #8c3746;
+                font-weight: 700;
+                font-size: 13.5px;
+                border-bottom: 2px solid #f6cde0;
+                white-space: nowrap;
+            }
+
+            #adminOrders .tbl td {
+                padding: 15px 14px;
+                border-bottom: 1px solid #f9dce9;
+                vertical-align: middle;
+                color: #3d242c;
+                line-height: 1.45;
+            }
+
+            #adminOrders .tbl tr:last-child td {
+                border-bottom: none;
+            }
+
+            #adminOrders .tbl tbody tr {
+                transition: background-color 0.18s ease;
+            }
+
+            #adminOrders .tbl tbody tr:hover {
+                background-color: #fff0f7;
+            }
+
+            /* Status Dropdown & Action Buttons inside Table */
+            #adminOrders .tbl select {
+                padding: 7px 12px;
+                border-radius: 12px;
+                border: 1.5px solid #e598bc;
+                background-color: #fff7fb;
+                color: #7d3140;
+                font-weight: 600;
+                font-size: 13px;
+                cursor: pointer;
+                outline: none;
+                transition: all 0.2s ease;
+            }
+
+            #adminOrders .tbl select:hover,
+            #adminOrders .tbl select:focus {
+                border-color: #964253;
+                background-color: #ffe8f3;
+            }
+
+            /* Dark Mode Compatibility */
+            body.dark #adminOrders .panel2,
+            html.dark #adminOrders .panel2,
+            [data-theme="dark"] #adminOrders .panel2 {
+                background: linear-gradient(180deg, #2d1823 0%, #24121b 100%);
+                border-color: #6e3a52;
+                box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+            }
+
+            body.dark #adminOrders .tbl th,
+            html.dark #adminOrders .tbl th,
+            [data-theme="dark"] #adminOrders .tbl th {
+                color: #ffb8d9;
+                border-bottom-color: #592d42;
+            }
+
+            body.dark #adminOrders .tbl td,
+            html.dark #adminOrders .tbl td,
+            [data-theme="dark"] #adminOrders .tbl td {
+                color: #fce7f3;
+                border-bottom-color: #422030;
+            }
+
+            body.dark #adminOrders .tbl tbody tr:hover,
+            html.dark #adminOrders .tbl tbody tr:hover,
+            [data-theme="dark"] #adminOrders .tbl tbody tr:hover {
+                background-color: #3a1f2d;
+            }
+
+            body.dark #adminOrders .filters button,
+            html.dark #adminOrders .filters button,
+            [data-theme="dark"] #adminOrders .filters button {
+                background: #381d2b;
+                border-color: #6e3a52;
+                color: #ffd6ea;
+            }
+
+            body.dark #adminOrders .filters button.active,
+            html.dark #adminOrders .filters button.active,
+            [data-theme="dark"] #adminOrders .filters button.active {
+                background: #ff88b7;
+                color: #2b1621;
+                border-color: #ff88b7;
+            }
+
+            body.dark #adminOrders .tbl select,
+            html.dark #adminOrders .tbl select,
+            [data-theme="dark"] #adminOrders .tbl select,
+            body.dark #adminOrders .filters input,
+            html.dark #adminOrders .filters input,
+            [data-theme="dark"] #adminOrders .filters input {
+                background: #381d2b;
+                border-color: #6e3a52;
+                color: #fce7f3;
+            }
+
+            @media (max-width: 768px) {
+                #adminOrders .filters input[type="text"],
+                #adminOrders .filters input[type="search"] {
+                    margin-left: 0;
+                    width: 100%;
+                }
+            }
+        </style>
     </head>
     <body>
         <header>
