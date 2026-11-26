@@ -3,6 +3,97 @@
     <head>
         <title>SweetHavens</title>
         <link rel="stylesheet" href="home.css">
+        <style>
+            #about_us {
+                position: relative;
+                max-width: none !important;
+                width: 100% !important;
+                margin: 0 !important;
+                min-height: calc(100vh - 82px);
+                padding: 50px 20px 70px !important;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+            .scene_backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: 0;
+                pointer-events: none;
+            }
+            #about_us #main_header {
+                position: relative;
+                z-index: 1;
+                max-width: 680px;
+                width: 100%;
+                margin: 75px auto 0;
+                padding: 44px 40px 40px;
+                background: linear-gradient(145deg, rgba(255, 232, 244, 0.94), rgba(255, 217, 238, 0.94));
+                backdrop-filter: blur(6px);
+                border: 1.5px solid rgba(255, 224, 130, 0.65);
+                border-radius: 28px;
+                text-align: center;
+                box-shadow:
+                    0 0 26px rgba(255, 232, 145, 0.45),
+                    0 14px 32px rgba(140, 55, 70, 0.14);
+                animation: yellowGlow 3.2s ease-in-out infinite alternate;
+                transition: background 0.3s ease, border-color 0.3s ease;
+            }
+            #about_us #main_header .products_header {
+                margin-top: 0;
+            }
+            @keyframes yellowGlow {
+                from {
+                    box-shadow:
+                        0 0 18px rgba(255, 232, 145, 0.30),
+                        0 14px 32px rgba(140, 55, 70, 0.14);
+                }
+                to {
+                    box-shadow:
+                        0 0 32px rgba(255, 232, 145, 0.58),
+                        0 14px 32px rgba(140, 55, 70, 0.16);
+                }
+            }
+
+            /* Dark mode support */
+            body.dark #about_us #main_header,
+            html.dark #about_us #main_header,
+            [data-theme="dark"] #about_us #main_header {
+                background: linear-gradient(145deg, rgba(58, 32, 45, 0.94), rgba(43, 22, 33, 0.94));
+                border-color: rgba(255, 224, 130, 0.42);
+            }
+            body.dark #about_us #main_header p,
+            html.dark #about_us #main_header p,
+            [data-theme="dark"] #about_us #main_header p {
+                color: #fce7f3;
+            }
+            body.dark .scene_wall,
+            html.dark .scene_wall,
+            [data-theme="dark"] .scene_wall {
+                fill: #3d2130;
+                stroke: #6e3a52;
+            }
+            body.dark .scene_ground,
+            html.dark .scene_ground,
+            [data-theme="dark"] .scene_ground {
+                fill: #2c1722;
+            }
+            body.dark .scene_cloud,
+            html.dark .scene_cloud,
+            [data-theme="dark"] .scene_cloud {
+                fill: #4f2c3e;
+            }
+            body.dark .scene_sign_bg,
+            html.dark .scene_sign_bg,
+            [data-theme="dark"] .scene_sign_bg {
+                fill: #351b28;
+            }
+        </style>
     </head>
     <body>
         <header>
@@ -18,13 +109,108 @@
                 <div><a class="nav1" href="cart.html">Cart</a></div>
                 <div><a class="nav1">Menu</a></div>
 
-                    <!-- Temporary login button-->
+                <!-- Temporary login button-->
                 <div><a href="login.html"><img src="assets/user.png" id="pfp_btn"></a></div>
             </div>
         </header>
         
         <!-- About Us Section -->
         <section id="about_us">
+            <!-- Full-Viewport Cozy Bakery Street Illustration -->
+            <svg class="scene_backdrop" viewBox="0 0 1440 820" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <!-- Soft Pastel Clouds -->
+                <g class="scene_cloud" fill="#ffe6f2" opacity="0.9">
+                    <ellipse cx="170" cy="175" rx="85" ry="28"/>
+                    <ellipse cx="220" cy="164" rx="60" ry="24"/>
+                    <ellipse cx="1260" cy="185" rx="90" ry="30"/>
+                    <ellipse cx="1205" cy="172" rx="60" ry="24"/>
+                </g>
+
+                <!-- Floating Sparkles & Dots -->
+                <g fill="#ff88b7" opacity="0.55">
+                    <circle cx="110" cy="300" r="6"/>
+                    <circle cx="1330" cy="285" r="7"/>
+                    <circle cx="295" cy="235" r="5"/>
+                    <circle cx="1145" cy="225" r="5"/>
+                </g>
+                <g fill="#ffd166" opacity="0.8">
+                    <polygon points="245,270 249,280 259,284 249,288 245,298 241,288 231,284 241,280"/>
+                    <polygon points="1195,295 1199,305 1209,309 1199,313 1195,323 1191,313 1181,309 1191,305"/>
+                </g>
+
+                <!-- Left & Right Pastel Trees -->
+                <g>
+                    <rect x="92" y="520" width="26" height="195" rx="10" fill="#964253"/>
+                    <circle cx="105" cy="480" r="84" fill="#ffb8d9"/>
+                    <circle cx="58" cy="512" r="60" fill="#ff9ec7"/>
+                    <circle cx="152" cy="512" r="60" fill="#ffcce5"/>
+                </g>
+                <g>
+                    <rect x="1322" y="520" width="26" height="195" rx="10" fill="#964253"/>
+                    <circle cx="1335" cy="480" r="84" fill="#ffb8d9"/>
+                    <circle cx="1288" cy="512" r="60" fill="#ffcce5"/>
+                    <circle cx="1382" cy="512" r="60" fill="#ff9ec7"/>
+                </g>
+
+                <!-- Left & Right Vintage Street Lamps -->
+                <g stroke="#7d3140" stroke-width="4" fill="none">
+                    <line x1="235" y1="415" x2="235" y2="710"/>
+                    <circle cx="235" cy="398" r="20" fill="#fff3b0"/>
+                    <line x1="1205" y1="415" x2="1205" y2="710"/>
+                    <circle cx="1205" cy="398" r="20" fill="#fff3b0"/>
+                </g>
+
+                <!-- Wide Bakery Shop Facade in Center -->
+                <g>
+                    <!-- Chimney -->
+                    <rect x="1035" y="96" width="46" height="72" rx="8" fill="#a84a5c" stroke="#7d3140" stroke-width="3"/>
+                    <rect x="1028" y="88" width="60" height="14" rx="7" fill="#ff9ec7" stroke="#7d3140" stroke-width="3"/>
+                    <!-- Main Shop Building -->
+                    <rect class="scene_wall" x="300" y="158" width="840" height="552" rx="34" fill="#fff2f8" stroke="#e9a3c4" stroke-width="4"/>
+                    <!-- Roof Signboard Peeking Cleanly Above Card -->
+                    <rect class="scene_sign_bg" x="545" y="102" width="350" height="58" rx="24" fill="#fff7fb" stroke="#964253" stroke-width="4"/>
+                    <text x="720" y="138" text-anchor="middle" font-family="cursive, sans-serif" font-weight="bold" font-size="24" fill="#964253">BAKERY & COOKIES</text>
+                    <!-- Wide Scalloped Striped Awning -->
+                    <g stroke="#7d3140" stroke-width="3">
+                        <path d="M290 161 H413 V207 A61 26 0 0 1 290 207 Z" fill="#ff88b7"/>
+                        <path d="M413 161 H536 V207 A61 26 0 0 1 413 207 Z" fill="#fff0f7"/>
+                        <path d="M536 161 H659 V207 A61 26 0 0 1 536 207 Z" fill="#ff88b7"/>
+                        <path d="M659 161 H782 V207 A61 26 0 0 1 659 207 Z" fill="#fff0f7"/>
+                        <path d="M782 161 H905 V207 A61 26 0 0 1 782 207 Z" fill="#ff88b7"/>
+                        <path d="M905 161 H1028 V207 A61 26 0 0 1 905 207 Z" fill="#fff0f7"/>
+                        <path d="M1028 161 H1150 V207 A61 26 0 0 1 1028 207 Z" fill="#ff88b7"/>
+                    </g>
+                    <!-- Side Display Windows Visible on Both Sides of Card -->
+                    <rect x="322" y="295" width="115" height="270" rx="22" fill="#ffe6f3" stroke="#e598bc" stroke-width="3"/>
+                    <circle cx="362" cy="360" r="18" fill="#c68b59" stroke="#7d3140" stroke-width="2"/>
+                    <circle cx="356" cy="354" r="3" fill="#4a2511"/>
+                    <circle cx="368" cy="364" r="3" fill="#4a2511"/>
+                    <circle cx="395" cy="415" r="16" fill="#7f4f24" stroke="#7d3140" stroke-width="2"/>
+
+                    <rect x="1003" y="295" width="115" height="270" rx="22" fill="#ffe6f3" stroke="#e598bc" stroke-width="3"/>
+                    <circle cx="1078" cy="360" r="18" fill="#c68b59" stroke="#7d3140" stroke-width="2"/>
+                    <circle cx="1072" cy="354" r="3" fill="#4a2511"/>
+                    <circle cx="1084" cy="364" r="3" fill="#4a2511"/>
+                    <circle cx="1045" cy="415" r="16" fill="#7f4f24" stroke="#7d3140" stroke-width="2"/>
+                </g>
+
+                <!-- Sidewalk & Flower Beds Filling Bottom Space -->
+                <rect class="scene_ground" x="0" y="705" width="1440" height="120" fill="#ffd6ea"/>
+                <line x1="0" y1="705" x2="1440" y2="705" stroke="#e598bc" stroke-width="4"/>
+                <!-- Flower Boxes -->
+                <g>
+                    <rect x="325" y="668" width="125" height="37" rx="10" fill="#964253"/>
+                    <circle cx="355" cy="662" r="12" fill="#ff88b7"/>
+                    <circle cx="388" cy="659" r="13" fill="#ffd166"/>
+                    <circle cx="421" cy="662" r="12" fill="#ff88b7"/>
+
+                    <rect x="990" y="668" width="125" height="37" rx="10" fill="#964253"/>
+                    <circle cx="1020" cy="662" r="12" fill="#ff88b7"/>
+                    <circle cx="1053" cy="659" r="13" fill="#ffd166"/>
+                    <circle cx="1086" cy="662" r="12" fill="#ff88b7"/>
+                </g>
+            </svg>
+
             <div id="main_header">
                 <h1 class="products_header">About Us</h1>
                 <p>Sweet Havens is a small business that specializes in creating delicious cookies and brownies. Our mission is to provide our customers with high-quality baked goods that are made with love and care. We believe that everyone deserves a sweet treat, and we strive to make our products accessible to all.</p>
