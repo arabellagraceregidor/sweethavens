@@ -197,7 +197,8 @@
     if (box) {
         var mode = 'Delivery', addr = $('#address'), method = $('#method');
         var payWrap = $('#pay_methods'), payOpts = $$('.pay_opt');
-        var payLabels = { cash: 'Cash on Delivery', credit: 'Credit/Debit Card', gcash: 'GCash' };
+        var cashLabel = function () { return mode === 'Pick Up' ? 'Pay on Pick Up' : 'Cash on Delivery'; };
+        var payLabels = { cash: cashLabel(), credit: 'Credit/Debit Card', gcash: 'GCash' };
         var cardBox = $('#card_checkout'), cardMsg = $('#card_msg');
         var cardName = $('#card_name'), cardNum = $('#card_number'), cardExp = $('#card_exp'), cardCvc = $('#card_cvc');
         var gcBox = $('#gcash_checkout'), gcMsg = $('#gc_msg'), gcName = $('#gc_name'), gcNum = $('#gc_num');
@@ -246,6 +247,11 @@
         };
         setInterval(etaPaint, 60000);
         var paint = function () {
+            payLabels.cash = cashLabel();
+            var cashBtn = $('.pay_opt[data-pay="cash"]');
+            if (cashBtn) cashBtn.textContent = payLabels.cash;
+            var t = totals(), p = $$('.summary div p:nth-child(2)');
+            p[0].textContent = fmt(t.sub); p[1].textContent = fmt(t.fee); p[2].textContent = fmt(t.tot);
             var t = totals(), p = $$('.summary div p:nth-child(2)');
             p[0].textContent = fmt(t.sub); p[1].textContent = fmt(t.fee); p[2].textContent = fmt(t.tot);
             addr.required = mode === 'Delivery'; stars(); showPayPanels(); etaPaint();
@@ -484,15 +490,16 @@
                 note += '</p>';
             }
             var cancel = o.status === 'Pending' ? '<button type="button" class="oc_cancel" data-cancel="' + esc(o.id) + '">Cancel Order</button>' : '';
-            var canBuyAgain = ['Completed', 'Delivered', 'Picked up', 'Cancelled', 'Returned'].indexOf(o.status) > -1;
-            var rcClass = canBuyAgain ? 'oc_rc' : 'oc_rc oc_again';
-            var again = canBuyAgain ? '<button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' : '';
-            var reviewShortcut = done ? '<button type="button" class="oc_rc" data-tab="To Review"> Rate  </button>' : '';
-            return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(SH.orderTagLabel(o)) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
-                '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + note + track + eta + rider + lines +
-                '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(o.pay) + '</span><div class="oc_btns">' +
-                '<button type="button" class="' + rcClass + '" data-rc="' + esc(o.id) + '">View receipt</button>' + reviewShortcut + again + cancel + '</div></div></div>';
-        };
+        var canBuyAgain = ['Completed', 'Delivered', 'Picked up', 'Cancelled', 'Returned'].indexOf(o.status) > -1;
+        var rcClass = canBuyAgain ? 'oc_rc' : 'oc_rc oc_again';
+        var again = canBuyAgain ? '<button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' : '';
+        var reviewShortcut = done ? '<button type="button" class="oc_rc" data-tab="To Review">Review</button>' : '';
+        var payText = (o.mode === 'Pick Up' && /cash on (delivery|pick up)/i.test(o.pay || '')) ? 'Pay on Pick Up' : o.pay;
+        return '<div class="order_card"><div class="oc_head"><div class="oc_shop">SweetHavens &rsaquo;<small>Order #' + esc(SH.orderTagLabel(o)) + ' &middot; ' + when(o.date) + ' &middot; ' + esc(o.mode) + '</small></div>' +
+            '<span class="pill_s ' + o.status + '">' + head + '</span></div><p class="oc_say">' + say + '</p>' + note + track + eta + rider + lines +
+            '<div class="oc_foot"><span>Total: <b>' + fmt(o.total) + '</b> &middot; ' + esc(payText) + '</span><div class="oc_btns">' +
+            '<button type="button" class="' + rcClass + '" data-rc="' + esc(o.id) + '">View receipt</button>' + reviewShortcut + again + cancel + '</div></div></div>';
+            };
         var isCompletedOrder = function (o) {
             var s = String(o && o.status || '').trim().toLowerCase();
             return s === 'completed' || s === 'delivered' || s === 'picked up';
@@ -508,10 +515,9 @@
                     ? '<button type="button" disabled style="opacity:0.65;cursor:not-allowed">Refund ' + esc(existingRf.status || 'Requested') + '</button>'
                     : '<button type="button" data-refund="' + esc(o.id) + '" data-item="' + index + '">Request Refund</button>';
                 rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(i.tag || SH.orderTagLabel(o)) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
-                    '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
-                    '<div class="oc_btns" style="align-items:center"><span>Quick review:</span><span class="quick_rating" data-order="' + esc(o.id) + '" data-item="' + index + '" style="display:flex;gap:4px"></span>' +
-                    '<button type="button" data-quick-submit="' + esc(o.id) + '" data-item="' + index + '">Submit</button>' + refundBtn +
-                    '<button type="button" class="oc_again" data-write-review="' + esc(o.id) + '" data-item="' + index + '" data-product="' + esc(i.name) + '">Write a Review</button></div></div>');
+                     '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
+                     '<div class="oc_btns" style="justify-content:flex-end">' + refundBtn +
+                     '<button type="button" class="oc_again" data-write-review="' + esc(o.id) + '" data-item="' + index + '" data-product="' + esc(i.name) + '">Write a Review</button></div></div>');
             });
             });
             return rows.length ? rows.join('') : '<div class="order_card"><p class="empty">No products are waiting for review.</p></div>';

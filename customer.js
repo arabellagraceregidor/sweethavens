@@ -70,17 +70,18 @@
                 var html = list.length ? list.map(function (r) {
                     return '<div class="order_card"><div class="oc_head"><b>' + esc(r.userName || 'Buyer') + '</b><small>' + new Date(r.date).toLocaleDateString('en-PH') + '</small></div>' +
                         '<p style="color:var(--mar)">' + '\u2605'.repeat(Math.max(0, Math.min(5, +r.stars || 0))) + '\u2606'.repeat(5 - Math.max(0, Math.min(5, +r.stars || 0))) + '</p>' +
-                        (r.text ? '<p>' + esc(r.text) + '</p>' : '<p>Quick rating</p>') + '</div>';
+                        (r.text ? '<p>' + esc(r.text) + '</p>' : '') + '</div>';
                 }).join('') : '<div class="order_card"><p class="empty">No reviews yet.</p></div>';
                 var can = eligible(product.n, params().get('order'));
                 if (!user) html += '<div class="order_card"><p>Log in after purchasing to write a review.</p></div>';
                 else if (!can.length) html += '<div class="order_card"><p>You can write a review after you have ordered this product.</p></div>';
                 else {
                     var choice = can[0], rating = params().get('rating') || 0;
-                    html += '<div class="order_card"><h2>Write a Review</h2><p>Order #' + esc(choice.order.id) + ' · ' + esc(product.n) + '</p>' +
+                    html += '<div class="order_card"><h2>Write a Review</h2><p>Order #' + esc(choice.order.id) + ' &middot; ' + esc(product.n) + '</p>' +
+                        '<label>Rating <span style="color:#c62828">*</span></label>' +
                         '<div id="review_rating" style="display:flex;gap:4px;align-items:center" aria-label="Choose a rating from one to five stars"></div>' +
-                        '<label for="review_text">Your review</label><textarea id="review_text" rows="4" style="width:100%;box-sizing:border-box;border:2px solid var(--bord);background:var(--field);color:var(--ink);border-radius:12px;padding:16px;font:inherit"></textarea>' +
-                        '<div class="oc_btns"><button type="button" class="btn_dark" id="review_submit">Submit Review</button></div><p id="review_msg"></p></div>';
+                        '<label for="review_text">Your review (optional)</label><textarea id="review_text" rows="4" placeholder="Share your thoughts about this bake (optional)..." style="width:100%;box-sizing:border-box;border:2px solid var(--bord);background:var(--field);color:var(--ink);border-radius:12px;padding:16px;font:inherit"></textarea>' +
+                        '<div class="oc_btns"><button type="button" class="btn_dark" id="review_submit">Submit Review</button></div><p id="review_msg" style="color:#c62828;font-weight:600"></p></div>';
                     reviewBox.innerHTML = html;
                     var stars = $('#review_rating'); starButtons(stars, +rating);
                     $('#review_submit').addEventListener('click', function () {
