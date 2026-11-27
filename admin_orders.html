@@ -206,6 +206,89 @@
                 color: #fce7f3;
             }
 
+            /* Refund and return approvals */
+            #adminOrders .rf_lead {
+                margin: 0 0 16px;
+                font-size: 14px;
+                line-height: 1.5;
+                color: #8c3746;
+                opacity: 0.9;
+            }
+
+            #adminOrders .tbl .rf_thumb {
+                width: 46px;
+                height: 46px;
+                border-radius: 10px;
+                object-fit: cover;
+                border: 1.5px solid #f0b6d1;
+                background: #fff7fb;
+                cursor: zoom-in;
+                margin-right: 6px;
+                vertical-align: middle;
+            }
+
+            #adminOrders .tbl .rf_item small,
+            #adminOrders .tbl .rf_reason small,
+            #adminOrders .tbl .rf_kind,
+            #adminOrders .tbl .st_by {
+                display: block;
+                margin-top: 3px;
+                font-size: 12.5px;
+                color: #9a8a8f;
+            }
+
+            #adminOrders .tbl .rf_reason {
+                max-width: 260px;
+            }
+
+            #adminOrders .tbl .mini.approve {
+                border-color: var(--mar);
+                background: var(--mar);
+                color: #ffffff;
+            }
+
+            #adminOrders .tbl .mini.reject {
+                border-color: var(--err);
+                color: var(--err);
+            }
+
+            #adminOrders .tbl .mini + .mini {
+                margin-left: 4px;
+            }
+
+            #adminOrders .tbl .empty_note {
+                font-size: 13px;
+                color: #9a8a8f;
+            }
+
+            /* owner cancellation: the extra "write my own reason" field */
+            #oc_other_box {
+                margin-top: 12px;
+            }
+
+            #rf_view {
+                position: fixed;
+                inset: 0;
+                z-index: 120;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: rgba(58, 44, 47, 0.55);
+            }
+
+            #rf_view.on {
+                display: flex;
+            }
+
+            #rf_view img {
+                max-width: min(720px, 92vw);
+                max-height: 84vh;
+                border: 3px solid var(--bord);
+                border-radius: 20px;
+                background: var(--card);
+            }
+
             @media (max-width: 768px) {
                 #adminOrders .filters input[type="text"],
                 #adminOrders .filters input[type="search"] {
@@ -240,9 +323,20 @@
         <div class="admin_cont" id="adminOrders">
             <h1>Order Management</h1>
             <p class="sub">View orders and update their status</p>
+            <div class="panel2">
+                <h2>Cancellation Requests</h2>
+                <p class="rf_lead">A customer cannot cancel an order on their own. Approve a request to cancel the order and return its items to stock, or decline to keep the order as it is.</p>
+                <div class="tbl_wrap"><table class="tbl" id="cancels"></table></div>
+            </div>
+            <div class="panel2">
+                <h2>Refund &amp; Return Approvals</h2>
+                <p class="rf_lead">Approve a customer refund request to move that order to Return. Declining keeps the order as it is.</p>
+                <div class="tbl_wrap"><table class="tbl" id="refunds"></table></div>
+            </div>
             <div class="filters" id="filters"></div>
             <div class="panel2"><div class="tbl_wrap"><table class="tbl" id="ord"></table></div></div>
         </div>
+        <div id="rf_view" aria-hidden="true"><img id="rf_img" alt="Refund evidence"></div>
         <script src="site.js"></script>
         <script src="admin.js"></script>
     </body>
