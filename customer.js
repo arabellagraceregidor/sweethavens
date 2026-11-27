@@ -157,7 +157,22 @@
         else {
             var orderId = params().get('order'), itemIndex = +params().get('item'), refundOrder = orderList().filter(function (o) { return String(o.id) === String(orderId) && norm(o.name) === norm(user.name) && o.status !== 'Cancelled' && o.status !== 'Returned'; })[0];
             var refundItem = refundOrder && refundOrder.items[itemIndex];
+            var claimClosed = !!refundItem && /completed|delivered|picked up/i.test(String(refundOrder.status || '')) && Date.now() - new Date(refundOrder.completedAt || refundOrder.date).getTime() >= 24 * 60 * 60 * 1000;
+            var openRequest = S.get('sh_refunds', []).filter(function (r) {
+                return String(r.orderId) === String(orderId) && r.itemIndex != null && Number(r.itemIndex) === itemIndex && r.status !== 'Rejected';
+            })[0];
             if (!refundItem) { $('#refund_item').textContent = 'Order item was not found.'; $('#refund_form button[type="submit"]').disabled = true; }
+            else if (claimClosed) {
+                $('#refund_item').textContent = 'Order #' + refundOrder.id + ' - ' + refundItem.name;
+                $('#refund_msg').textContent = 'Refunds and returns are only available within 24 hours of a completed order.';
+                $('#refund_form button[type="submit"]').disabled = true;
+            } else if (openRequest) {
+                $('#refund_item').textContent = 'Order #' + refundOrder.id + ' · ' + refundItem.name;
+                $('#refund_msg').textContent = openRequest.status === 'Approved'
+                    ? 'This refund was already approved. The order is now under Return.'
+                    : 'You already requested a refund for this item. Please wait for the admin to approve it.';
+                $('#refund_form button[type="submit"]').disabled = true;
+            }
             else $('#refund_item').textContent = 'Order #' + refundOrder.id + ' · ' + refundItem.name;
             refundForm.addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -166,6 +181,7 @@
                 msg.textContent = '';
 
                 if (!refundItem) { msg.textContent = 'Order item was not found.'; return; }
+                if (claimClosed) { msg.textContent = 'Refunds and returns are only available within 24 hours of a completed order.'; return; }
                 if (!rawReason) { $('#refund_reason').classList.add('invalid'); msg.textContent = 'Please choose a reason.'; $('#refund_reason').focus(); return; }
                 if (!details) { $('#refund_details').classList.add('invalid'); msg.textContent = 'Please enter extra details or your reason.'; $('#refund_details').focus(); return; }
                 if (!files || !files.length) { $('#refund_prev').classList.add('invalid'); msg.textContent = 'Please attach at least one picture or video.'; return; }
