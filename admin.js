@@ -33,6 +33,7 @@
             made.push({ id: id, name: names[Math.floor(rnd() * names.length)], mode: mode, addr: mode === 'Delivery' ? 'Manila, 1000 Metro Manila' : 'Pick up at the shop',
                 pay: ['Cash on Delivery', 'Credit/Debit Card', 'GCash'][Math.floor(rnd() * 3)], items: items, sub: sub, fee: fee, total: sub + fee,
                 status: i < 2 ? 'Pending' : i < 4 ? 'Preparing' : i === 4 ? 'Ready' : (i === 9 || i === 17) ? 'Cancelled' : 'Completed',
+                cancelledBy: i === 9 ? 'customer' : i === 17 ? 'owner' : '', cancelReason: i === 9 ? 'Changed my mind' : i === 17 ? 'Ingredient supply ran out' : '',
                 date: new Date(Date.now() - Math.floor(i / 1.9) * DAY - i * 2.3e6).toISOString(), sample: true });
         }
         S.set('sh_orders', keep.concat(made));
@@ -44,7 +45,7 @@
     seed(false);
 
     var orders = function () { return S.get('sh_orders', []); };
-    var live = function () { return orders().filter(function (o) { return o.status !== 'Cancelled'; }); };
+    var live = function () { return orders().filter(function (o) { return o.status !== 'Cancelled' && o.status !== 'Returned'; }); };
     var dstr = function (iso) { var d = new Date(iso); return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); };
     var lvl = function (q) { return q <= 0 ? 'out' : q < LOW ? 'low' : 'ok'; };
     var lvlText = { out: 'Out of stock', low: 'Low stock', ok: 'In stock' };
@@ -155,25 +156,206 @@
         };
 
         drawDash();
+
+        /* "Reset sample data": build a fresh set of sample orders and repaint the dashboard */
+        var resetBtn = $('#reset');
+        if (resetBtn) resetBtn.addEventListener('click', function () {
+            seed(true);
+            drawDash();
+            SH.toast('Sample data was reset.');
+        });
     }
 
-    /* ---------------- ORDER MANAGEMENT ---------------- */
+    /* ---------------- ORDER MANAGEMENT + REFUND / RETURN APPROVALS ---------------- */
     if ($('#adminOrders')) {
         var filter = 'All', q = '';
+        var FILTERS = ['All', 'Pending', 'Preparing', 'Ready', 'Completed', 'Returned', 'Cancelled', 'Cancelled by owner', 'Cancelled by customer'];
+        var RF_CLASS = { Requested: 'Pending', Approved: 'ok', Rejected: 'Rejected' };
+        var matchFilter = function (o, f) {
+            if (f === 'All') return true;
+            if (f === 'Cancelled by owner') return o.status === 'Cancelled' && o.cancelledBy === 'owner';
+            if (f === 'Cancelled by customer') return o.status === 'Cancelled' && o.cancelledBy === 'customer';
+            return o.status === f;
+        };
+        var cancelByText = function (o) {
+            if (o.status !== 'Cancelled') return '';
+            return o.cancelledBy === 'owner' ? 'by owner' : o.cancelledBy === 'customer' ? 'by customer' : '';
+        };
+        var findOrder = function (id) { return orders().filter(function (o) { return String(o.id) === String(id); })[0]; };
+        var refundTotal = function (rf) {
+            var o = findOrder(rf.orderId);
+            if (!o) return 0;
+            if (rf.itemIndex != null && o.items && o.items[rf.itemIndex]) return o.items[rf.itemIndex].price * o.items[rf.itemIndex].qty;
+            return o.total;
+        };
+
+        var drawRefunds = function () {
+            var host = $('#refunds');
+            if (!host) return;
+            var all = S.get('sh_refunds', []).slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+            host.innerHTML = '<tr><th>Order</th><th>Customer</th><th>Item</th><th>Reason</th><th>Refund</th><th>Evidence</th><th>Requested</th><th>Status</th></tr>' + (all.length ? all.map(function (rf) {
+                var o = findOrder(rf.orderId), item = o && rf.itemIndex != null ? o.items[rf.itemIndex] : null;
+                var shots = (rf.evidence || []).map(function (ev, i) {
+                    return ev && /^image\//.test(ev.type || '') ? '<img class="rf_thumb" src="' + ev.data + '" alt="Refund evidence" data-shot="' + esc(rf.id) + '" data-i="' + i + '">' : '';
+                }).join('') || '<span class="empty_note">No picture</span>';
+                var act = rf.status === 'Requested'
+                    ? '<button type="button" class="mini wide approve" data-rf="' + esc(rf.id) + '" data-do="approve">Approve</button><button type="button" class="mini wide reject" data-rf="' + esc(rf.id) + '" data-do="reject">Decline</button>'
+                    : '<span class="pill_s ' + (RF_CLASS[rf.status] || '') + '">' + esc(rf.status) + '</span>';
+                return '<tr><td><b>#' + esc(rf.orderId) + '</b>' + (rf.kind ? '<small class="rf_kind">' + esc(rf.kind) + '</small>' : '') + '</td><td>' + esc(rf.userName) + '</td><td class="rf_item">' + esc(rf.product) + (item ? '<small>Qty: ' + item.qty + '</small>' : '') +
+                    '</td><td class="rf_reason">' + esc(rf.reason) + (rf.details ? '<small>' + esc(rf.details) + '</small>' : '') + (rf.reference ? '<small>Ref: ' + esc(rf.reference) + '</small>' : '') +
+                    '</td><td><b>' + fmt(refundTotal(rf)) + '</b>' + (rf.method ? '<small class="rf_kind">' + esc(rf.method) + '</small>' : '') +
+                    '</td><td>' + shots + '</td><td>' + dstr(rf.date) + '</td><td>' + act + '</td></tr>';
+            }).join('') : '<tr><td colspan="8" class="empty">No refund or return requests yet.</td></tr>');
+        };
+
+        var decide = function (id, approve) {
+            var reqs = S.get('sh_refunds', []), rf = reqs.filter(function (x) { return x.id === id; })[0];
+            if (!rf || rf.status !== 'Requested') return;
+            rf.status = approve ? 'Approved' : 'Rejected';
+            rf.decidedAt = new Date().toISOString();
+            var all = orders(), o = all.filter(function (x) { return String(x.id) === String(rf.orderId); })[0], moved = false;
+            if (o) {
+                o.refundStatus = rf.status;
+                if (!o.refund) o.refund = {};
+                o.refund.status = rf.status;
+                if (approve && o.status !== 'Cancelled') { o.status = 'Returned'; o.returnedAt = rf.decidedAt; moved = true; }
+                S.set('sh_orders', all);
+            }
+            S.set('sh_refunds', reqs);
+            SH.toast(approve
+                ? (moved ? 'Refund approved. Order #' + rf.orderId + ' is now under Return.' : 'Refund approved. Order #' + rf.orderId + ' stays cancelled.')
+                : 'Refund request for order #' + rf.orderId + ' was declined.');
+            drawRefunds(); drawOrders();
+        };
+
+        /* ---------- CUSTOMER CANCELLATION REQUESTS: the owner approves or declines them ---------- */
+        var requestedCancel = function (o) { return !!(o.cancelRequest && o.cancelRequest.status === 'Requested'); };
+        var CR_CLASS = { Requested: 'Pending', Approved: 'ok', Declined: 'Rejected' };
+        var drawCancels = function () {
+            var host = $('#cancels');
+            if (!host) return;
+            var all = orders().filter(function (o) { return o.cancelRequest && o.cancelRequest.id; })
+                .sort(function (a, b) { return new Date(b.cancelRequest.date) - new Date(a.cancelRequest.date); });
+            host.innerHTML = '<tr><th>Order</th><th>Customer</th><th>Items</th><th>Reason</th><th>Total</th><th>Requested</th><th>Status</th></tr>' + (all.length ? all.map(function (o) {
+                var cr = o.cancelRequest, act = cr.status === 'Requested'
+                    ? '<button type="button" class="mini wide approve" data-cr="' + esc(o.id) + '" data-do="approve">Approve</button><button type="button" class="mini wide reject" data-cr="' + esc(o.id) + '" data-do="reject">Decline</button>'
+                    : '<span class="pill_s ' + (CR_CLASS[cr.status] || '') + '">' + esc(cr.status) + '</span>';
+                return '<tr><td><b>#' + esc(o.id) + '</b></td><td>' + esc(o.name) + '</td><td>' +
+                    o.items.map(function (i) { return i.qty + 'x ' + esc(i.name); }).join('<br>') + '</td><td class="rf_reason">' + esc(cr.reason) +
+                    (cr.needsRefund ? '<small>Refund requested' + (cr.reference ? ' &middot; Ref: ' + esc(cr.reference) : '') + '</small>' : '<small>No payment to refund</small>') +
+                    '</td><td><b>' + fmt(o.total) + '</b></td><td>' + dstr(cr.date) + '</td><td>' + act + '</td></tr>';
+            }).join('') : '<tr><td colspan="7" class="empty">No cancellation requests yet.</td></tr>');
+        };
+
+        var decideCancel = function (id, approve) {
+            var all = orders(), o = all.filter(function (x) { return String(x.id) === String(id); })[0];
+            if (!o || !requestedCancel(o)) return;
+            var cr = o.cancelRequest, now = new Date().toISOString(), st = SH.stock();
+            cr.decidedAt = now;
+            if (approve) {
+                cr.status = 'Approved';
+                o.items.forEach(function (i) { st[i.name] = (st[i.name] || 0) + i.qty; });
+                o.status = 'Cancelled';
+                o.cancelledBy = 'customer';
+                o.cancelReason = cr.reason;
+                o.cancelDate = now;
+                if (cr.needsRefund) {
+                    var reqs = S.get('sh_refunds', []);
+                    reqs.push({ id: cr.id, orderId: o.id, itemIndex: null, product: o.items.map(function (i) { return i.name; }).join(', '),
+                        userName: o.name, reason: cr.reason, details: '', reference: cr.reference, method: cr.method, kind: 'Order cancellation',
+                        evidence: cr.evidence || [], status: 'Approved', date: cr.date, decidedAt: now });
+                    S.set('sh_refunds', reqs);
+                    o.refundStatus = 'Approved';
+                    o.refund = { id: cr.id, status: 'Approved', method: cr.method, reference: cr.reference, date: now };
+                } else {
+                    o.refundStatus = 'No refund';
+                }
+                SH.saveStock(st);
+            } else {
+                cr.status = 'Declined';
+            }
+            S.set('sh_orders', all);
+            SH.toast(approve
+                ? 'Cancellation approved. Order #' + o.id + ' is now cancelled.'
+                : 'Cancellation request for order #' + o.id + ' was declined.');
+            drawCancels(); drawRefunds(); drawOrders();
+        };
+
+        /* ---------- OWNER CANCELLATION: the reason is required and the customer sees it ---------- */
+        var OWNER_REASONS = ['Out of stock', 'Store is closed at the chosen time', 'Cannot deliver to this address', 'Schedule change', 'Other reason'];
+        var reasonBox = document.createElement('div');
+        reasonBox.id = 'cancel_modal';
+        reasonBox.innerHTML = '<div class="cc_card" role="dialog" aria-modal="true" aria-labelledby="oc_title">' +
+            '<p class="cc_title" id="oc_title">Cancel this order?</p>' +
+            '<p class="cc_sub" id="oc_sub"></p>' +
+            '<p class="cc_pay">The customer sees the reason you choose here in My Orders.</p>' +
+            '<label class="cc_label" for="oc_reason">Reason for cancelling</label>' +
+            '<select class="cc_sel" id="oc_reason"><option value="">Choose one reason</option>' + OWNER_REASONS.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select>' +
+            '<div id="oc_other_box" hidden><label class="cc_label" for="oc_other">Your reason</label>' +
+            '<input class="cc_in" id="oc_other" maxlength="90" placeholder="Type your reason"></div>' +
+            '<p class="cc_msg" id="oc_msg"></p>' +
+            '<div class="cc_btns"><button type="button" class="cc_keep" id="oc_keep">Keep order</button>' +
+            '<button type="button" class="cc_go" id="oc_go">Cancel order</button></div></div>';
+        document.body.appendChild(reasonBox);
+
+        var ocOrder = null;
+        var ocEl = function (id) { return reasonBox.querySelector('#' + id); };
+        var ocSay = function (t, bad) { var m = ocEl('oc_msg'); m.textContent = t || ''; m.className = 'cc_msg' + (bad ? ' err' : ''); };
+        var ocClose = function () { reasonBox.classList.remove('on'); ocOrder = null; };
+        var openOwnerCancel = function (o) {
+            ocOrder = o;
+            ocEl('oc_sub').textContent = 'Order #' + SH.orderTagLabel(o) + ' - ' + o.name + ' - ' + o.mode;
+            ocEl('oc_reason').value = ''; ocEl('oc_other').value = ''; ocEl('oc_other_box').hidden = true;
+            ocEl('oc_reason').classList.remove('invalid'); ocEl('oc_other').classList.remove('invalid');
+            ocSay('');
+            reasonBox.classList.add('on');
+            ocEl('oc_reason').focus();
+        };
+        ocEl('oc_reason').addEventListener('change', function () {
+            ocEl('oc_reason').classList.remove('invalid');
+            ocEl('oc_other_box').hidden = this.value !== 'Other reason';
+            if (this.value !== 'Other reason') ocEl('oc_other').value = '';
+            ocSay('');
+        });
+        ocEl('oc_other').addEventListener('input', function () { ocEl('oc_other').classList.remove('invalid'); });
+        ocEl('oc_keep').addEventListener('click', function () { ocClose(); drawOrders(); });
+        reasonBox.addEventListener('click', function (e) { if (e.target === reasonBox) { ocClose(); drawOrders(); } });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && reasonBox.classList.contains('on')) { ocClose(); drawOrders(); } });
+        ocEl('oc_go').addEventListener('click', function () {
+            if (!ocOrder) return;
+            var reason = ocEl('oc_reason').value, other = ocEl('oc_other').value.trim();
+            if (!reason) { ocEl('oc_reason').classList.add('invalid'); ocSay('Choose one reason for cancelling the order.', true); ocEl('oc_reason').focus(); return; }
+            if (reason === 'Other reason' && !other) { ocEl('oc_other').classList.add('invalid'); ocSay('Type the reason you are cancelling this order.', true); ocEl('oc_other').focus(); return; }
+            var all = orders(), o = all.filter(function (x) { return String(x.id) === String(ocOrder.id); })[0];
+            if (!o) { ocClose(); drawOrders(); return; }
+            var st = SH.stock();
+            o.items.forEach(function (i) { st[i.name] = (st[i.name] || 0) + i.qty; });
+            o.status = 'Cancelled';
+            o.cancelledBy = 'owner';
+            o.cancelReason = reason === 'Other reason' ? other : reason;
+            o.cancelDate = new Date().toISOString();
+            S.set('sh_orders', all); SH.saveStock(st);
+            ocClose();
+            SH.toast('Order #' + o.id + ' is cancelled. The customer can see the reason.');
+            drawCancels(); drawRefunds(); drawOrders();
+        });
+
         var drawOrders = function () {
             var all = orders().slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
-            $('#filters').innerHTML = ['All'].concat(STATUS).map(function (s) {
-                var n = s === 'All' ? all.length : all.filter(function (o) { return o.status === s; }).length;
-                return '<button class="' + (s === filter ? 'on' : '') + '" data-f="' + s + '">' + s + ' (' + n + ')</button>';
+            $('#filters').innerHTML = FILTERS.map(function (s) {
+                var n = all.filter(function (o) { return matchFilter(o, s); }).length;
+                return '<button type="button" class="' + (s === filter ? 'on' : '') + '" data-f="' + esc(s) + '">' + s + ' (' + n + ')</button>';
             }).join('') + '<input id="q" placeholder="Search order # or customer" value="' + esc(q) + '">';
-            var list = all.filter(function (o) { return (filter === 'All' || o.status === filter) && (!q || (o.id + ' ' + o.name).toLowerCase().indexOf(q.toLowerCase()) > -1); });
+            var list = all.filter(function (o) { return matchFilter(o, filter) && (!q || (o.id + ' ' + o.name).toLowerCase().indexOf(q.toLowerCase()) > -1); });
             $('#ord').innerHTML = '<tr><th>Order</th><th>Customer</th><th>Items</th><th>Type</th><th>Payment</th><th>Total</th><th>Date</th><th>Rider Location</th><th>Status</th></tr>' + (list.length ? list.map(function (o) {
+                var by = cancelByText(o);
                 return '<tr><td><b>#' + esc(o.id) + '</b>' + (o.sample ? ' <small>(sample)</small>' : '') + '</td><td>' + esc(o.name) + '</td><td>' +
                     o.items.map(function (i) { return i.qty + 'x ' + esc(i.name); }).join('<br>') + '</td><td>' + esc(o.mode) + '</td><td>' + esc(o.pay) + '</td><td><b>' + fmt(o.total) + '</b></td><td>' + dstr(o.date) +
-                    '</td><td><input type="text" class="rider_location" data-location="' + esc(o.id) + '" value="' + esc(o.riderLocation || '') + '" placeholder="Enter rider location"></td><td><select class="st" data-o="' + esc(o.id) + '">' + STATUS.map(function (s) { return '<option' + (s === o.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></td></tr>';
+                    '</td><td><input type="text" class="rider_location" data-location="' + esc(o.id) + '" value="' + esc(o.riderLocation || '') + '" placeholder="Enter rider location"></td><td><select class="st" data-o="' + esc(o.id) + '">' + STATUS.map(function (s) { return '<option' + (s === o.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' + (by ? '<small class="st_by">' + by + '</small>' : '') + '</td></tr>';
             }).join('') : '<tr><td colspan="9" class="empty">No orders found.</td></tr>');
             var qi = $('#q'); qi.addEventListener('input', function () { q = qi.value; var p = qi.selectionStart; drawOrders(); var n = $('#q'); n.focus(); n.setSelectionRange(p, p); });
         };
+
         $('#filters').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.getAttribute('data-f'); drawOrders(); } });
         $('#ord').addEventListener('change', function (e) {
             var loc = e.target.closest('input[data-location]');
@@ -184,12 +366,47 @@
             }
             var sel = e.target.closest('select[data-o]'); if (!sel) return;
             var all = orders(), o = all.filter(function (x) { return x.id === sel.getAttribute('data-o'); })[0], st = SH.stock(), was = o.status, now = sel.value;
-            if (now === 'Cancelled' && was !== 'Cancelled') o.items.forEach(function (i) { st[i.name] = (st[i.name] || 0) + i.qty; });
-            if (was === 'Cancelled' && now !== 'Cancelled') o.items.forEach(function (i) { st[i.name] = Math.max(0, (st[i.name] || 0) - i.qty); });
+            if (now === 'Cancelled' && was !== 'Cancelled') {
+                /* an owner cancellation needs a reason the customer can read; a pending request is approved instead */
+                if (requestedCancel(o)) { decideCancel(o.id, true); return; }
+                openOwnerCancel(o);
+                return;
+            }
+            if (was === 'Cancelled' && now !== 'Cancelled') {
+                o.items.forEach(function (i) { st[i.name] = Math.max(0, (st[i.name] || 0) - i.qty); });
+                o.cancelledBy = '';
+            }
             o.status = now;
+            if (now === 'Completed' && was !== 'Completed') o.completedAt = new Date().toISOString();
             if (now === 'Completed' && /cash|cod/i.test(o.pay || '')) o.paid = true;
+            if (now === 'Returned' && was !== 'Returned') o.returnedAt = new Date().toISOString();
             S.set('sh_orders', all); SH.saveStock(st); SH.toast('Order #' + o.id + ' is now ' + now); drawOrders();
         });
+
+        var rfHost = $('#refunds');
+        if (rfHost) rfHost.addEventListener('click', function (e) {
+            var shot = e.target.closest('[data-shot]');
+            if (shot) {
+                var rf = S.get('sh_refunds', []).filter(function (x) { return x.id === shot.getAttribute('data-shot'); })[0];
+                var ev = rf && rf.evidence && rf.evidence[+shot.getAttribute('data-i')];
+                if (ev && ev.data) { $('#rf_img').src = ev.data; $('#rf_view').classList.add('on'); $('#rf_view').setAttribute('aria-hidden', 'false'); }
+                return;
+            }
+            var b = e.target.closest('[data-rf]');
+            if (b) decide(b.getAttribute('data-rf'), b.getAttribute('data-do') === 'approve');
+        });
+        var rfView = $('#rf_view');
+        if (rfView) {
+            rfView.addEventListener('click', function () { rfView.classList.remove('on'); rfView.setAttribute('aria-hidden', 'true'); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { rfView.classList.remove('on'); rfView.setAttribute('aria-hidden', 'true'); } });
+        }
+        var crHost = $('#cancels');
+        if (crHost) crHost.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-cr]');
+            if (b) decideCancel(b.getAttribute('data-cr'), b.getAttribute('data-do') === 'approve');
+        });
+        drawCancels();
+        drawRefunds();
         drawOrders();
     }
 
