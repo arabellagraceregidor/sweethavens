@@ -369,6 +369,13 @@
             btns.forEach(function (x) { x.classList.toggle('active', x === b); }); paint();
         }); });
         if (addr) addr.addEventListener('input', function () { addr.classList.remove('invalid'); });
+        /* the address a customer saved when the account was made is already filled in, and can still be edited */
+        (function () {
+            var me = SH.user(), saved = me && S.get('sh_users', []).filter(function (x) { return SH.norm(x.name) === SH.norm(me.name); })[0];
+            if (!saved || !addr || addr.value.trim()) return;
+            var parts = [saved.address, saved.brgy, saved.city, saved.region, saved.zip].filter(function (v) { return String(v || '').trim(); });
+            if (parts.length) addr.value = parts.join(', ');
+        })();
         paint();
         var place = $('.delivery-container > button[type="submit"]');
         place.addEventListener('click', function (e) {
@@ -440,7 +447,7 @@
     if (mo) {
         var STEPS = { 'Delivery': ['Order placed', 'Preparing', 'Out for delivery', 'Delivered'], 'Pick Up': ['Order placed', 'Preparing', 'Ready for pick up', 'Picked up'] };
         var IDX = { Pending: 0, Preparing: 1, Ready: 2, 'Pick Up': 2, Completed: 3 };
-        var TABS = ['All', 'To Pay', 'To Ship', 'To Receive', 'To Review', 'Return'];
+        var TABS = ['All', 'To Pay', 'To Ship', 'To Receive', 'To Review', 'Return', 'Cancelled'];
         var tab = 'All', lastSig = '';
         var SAY = {
             Pending: 'We received your order and will start baking soon.',
@@ -466,6 +473,14 @@
                 return String(rf.orderId) === String(o.id) && Number(rf.itemIndex) === Number(i) && rf.status !== 'Rejected';
             })[0] || null;
         };
+        var approvedRefund = function (o) {
+            return allRefunds().filter(function (rf) { return String(rf.orderId) === String(o.id) && rf.status === 'Approved'; })[0] || null;
+        };
+        var cancelLabel = function (o) {
+            if (o.cancelledBy === 'owner') return 'Cancelled by owner';
+            if (o.cancelledBy === 'customer') return 'Cancelled by customer';
+            return 'Cancelled';
+        };
         var isCashLike = function (o) { return /cash|cod|pay on pick up/i.test(o.pay || ''); };
         var isPaid = function (o) {
             if (o.status === 'Completed' || o.status === 'Delivered' || o.status === 'Picked up') return true;
@@ -473,9 +488,10 @@
         };
         var orderCard = function (o) {
             var steps = STEPS[o.mode] || STEPS.Delivery, idx = IDX[o.status] || 0, done = o.status === 'Completed', gone = o.status === 'Cancelled', returned = o.status === 'Returned';
-            var head = gone ? 'Order cancelled' : returned ? 'Returned' : o.status === 'Pick Up' ? 'Picked up by rider' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
+            var req = o.cancelRequest, pending = !!req && req.status === 'Requested';
+            var head = gone ? cancelLabel(o) : returned ? 'Returned' : o.status === 'Pick Up' ? 'Picked up by rider' : done ? (o.mode === 'Delivery' ? 'Order delivered' : 'Order completed') : steps[idx];
             var say = SAY[o.status === 'Ready' || o.status === 'Completed' ? o.status + ':' + o.mode : o.status] || '';
-            if (returned) say = 'This order was successfully returned.';
+            if (returned) say = 'This order is under Return.';
             var track = gone || returned ? '' : '<div class="track"><span class="track_fill" data-w="calc(75% * ' + (done ? 3 : idx) + ' / 3)"></span>' + steps.map(function (s, i) {
                 var d = done || i < idx, n = !done && i === idx;
                 return '<div class="step' + (d ? ' done' : n ? ' now' : '') + '"><i>' + (d ? '\u2713' : (i + 1)) + '</i><span>' + s + '</span></div>';
@@ -488,12 +504,29 @@
             var rider = o.mode === 'Delivery' && !gone && !returned ? '<div class="oc_eta"><div><span>Rider location</span><b>' + esc(o.riderLocation || 'Location not updated yet') + '</b></div></div>' : '';
             var note = '';
             if (gone) {
-                note = '<p class="oc_note">Reason: <b>' + esc(o.cancelReason || 'Not stated') + '</b>';
+                var who = o.cancelledBy === 'owner' ? 'the shop owner' : o.cancelledBy === 'customer' ? 'the customer' : 'the shop';
+                note = '<p class="oc_note">Cancelled by <b>' + who + '</b>';
+                if (o.cancelReason && o.cancelReason !== 'Cancelled by the shop owner') note += ' &middot; Reason: <b>' + esc(o.cancelReason) + '</b>';
                 if (o.refundStatus === 'Requested') note += ' &middot; Refund requested, reference ' + esc((o.refund && o.refund.reference) || '') + '.';
+                else if (o.refundStatus === 'Approved') note += ' &middot; Refund approved.';
+                else if (o.refundStatus === 'Rejected') note += ' &middot; Refund request was declined.';
                 else if (o.refundStatus === 'No refund') note += ' &middot; No refund: cash is paid on delivery, so nothing was charged.';
                 note += '</p>';
+            } else if (returned) {
+                var rfA = approvedRefund(o);
+                note = rfA
+                    ? '<p class="oc_note">Refund approved' + (rfA.method ? ' via <b>' + esc(rfA.method) + '</b>' : '') + (rfA.reference ? ' &middot; Reference: <b>' + esc(rfA.reference) + '</b>' : '') + '.</p>'
+                    : '<p class="oc_note">This order was marked as returned by the shop. Please contact us for the refund details.</p>';
+            } else if (pending) {
+                note = '<p class="oc_note">Cancellation requested &middot; waiting for the shop owner to approve it. Reason: <b>' + esc(req.reason) + '</b></p>';
+            } else if (req && req.status === 'Declined') {
+                note = '<p class="oc_note">Your cancellation request was declined by the shop owner. You can still cancel this order.</p>';
             }
-            var cancel = o.status === 'Pending' ? '<button type="button" class="oc_cancel" data-cancel="' + esc(o.id) + '">Cancel Order</button>' : '';
+            var cancel = o.status === 'Pending'
+                ? (pending
+                    ? '<button type="button" class="oc_cancel" disabled style="opacity:0.65;cursor:not-allowed">Cancellation pending</button>'
+                    : '<button type="button" class="oc_cancel" data-cancel="' + esc(o.id) + '">Cancel Order</button>')
+                : '';
         var canBuyAgain = ['Completed', 'Delivered', 'Picked up', 'Cancelled', 'Returned'].indexOf(o.status) > -1;
         var rcClass = canBuyAgain ? 'oc_rc' : 'oc_rc oc_again';
         var again = canBuyAgain ? '<button type="button" class="oc_again" data-again="' + esc(o.id) + '">Buy again</button>' : '';
@@ -508,6 +541,10 @@
             var s = String(o && o.status || '').trim().toLowerCase();
             return s === 'completed' || s === 'delivered' || s === 'picked up';
         };
+        /* a completed order can only be refunded or returned within 24 hours */
+        var CLAIM_WINDOW = 24 * 60 * 60 * 1000;
+        var completedTime = function (o) { var t = new Date(o.completedAt || o.date).getTime(); return isNaN(t) ? 0 : t; };
+        var claimOpen = function (o) { return Date.now() - completedTime(o) < CLAIM_WINDOW; };
         var reviewCards = function (all) {
             var rows = [];
             all.forEach(function (o) {
@@ -515,9 +552,10 @@
                 (o.items || []).forEach(function (i, index) {
                 if (reviewed(o, index)) return;
                 var existingRf = refundOf(o, index);
-                var refundBtn = existingRf
-                    ? '<button type="button" disabled style="opacity:0.65;cursor:not-allowed">Refund ' + esc(existingRf.status || 'Requested') + '</button>'
-                    : '<button type="button" data-refund="' + esc(o.id) + '" data-item="' + index + '">Request Refund</button>';
+                var refundBtn = !claimOpen(o) ? ''
+                    : existingRf
+                        ? '<button type="button" disabled style="opacity:0.65;cursor:not-allowed">Refund ' + esc(existingRf.status || 'Requested') + '</button>'
+                        : '<button type="button" data-refund="' + esc(o.id) + '" data-item="' + index + '">Request Refund</button>';
                 rows.push('<div class="order_card"><div class="oc_head"><div class="oc_shop">Order #' + esc(i.tag || SH.orderTagLabel(o)) + '<small>' + when(o.date) + '</small></div><span>' + esc(i.name) + '</span></div>' +
                      '<div class="oc_line"><img src="' + esc(picOf(i)) + '" alt="' + esc(i.name) + '" style="width:76px;height:76px;object-fit:contain"><div class="oc_name"><b>' + (i.tag ? '<small>' + esc(i.tag) + '</small> ' : '') + esc(i.name) + '</b><span>Qty: ' + i.qty + '</span></div></div>' +
                      '<div class="oc_btns" style="justify-content:flex-end">' + refundBtn +
@@ -526,8 +564,16 @@
             });
             return rows.length ? rows.join('') : '<div class="order_card"><p class="empty">No products are waiting for review.</p></div>';
         };
+        var cancelledCards = function (list) {
+            var groups = [{ by: 'owner', title: 'Cancelled by owner' }, { by: 'customer', title: 'Cancelled by customer' }, { by: '', title: 'Cancelled' }];
+            return groups.map(function (g) {
+                var rows = list.filter(function (o) { return g.by ? o.cancelledBy === g.by : o.cancelledBy !== 'owner' && o.cancelledBy !== 'customer'; });
+                if (!rows.length) return '';
+                return '<h2 class="oc_group">' + g.title + '<em>' + rows.length + '</em></h2>' + rows.map(orderCard).join('');
+            }).join('');
+        };
         var drawOrders = function (force) {
-            var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status, o.paid, o.riderLocation]; })) + JSON.stringify(allReviews().map(function (r) { return r.id; }));
+            var all = mine(), sig = tab + JSON.stringify(all.map(function (o) { return [o.id, o.status, o.paid, o.riderLocation, o.cancelledBy, o.refundStatus, o.cancelRequest && o.cancelRequest.status]; })) + JSON.stringify(allReviews().map(function (r) { return r.id; }));
             if (!force && sig === lastSig) return;
             lastSig = sig;
             var isToPay = function (o) {
@@ -538,6 +584,7 @@
                 if (tab === 'To Ship') return o.status === 'Pending' || o.status === 'Preparing';
                 if (tab === 'To Receive') return o.status === 'Ready' || o.status === 'Pick Up';
                 if (tab === 'Return') return o.status === 'Returned';
+                if (tab === 'Cancelled') return o.status === 'Cancelled';
                 return true;
             });
             var counts = {
@@ -546,7 +593,8 @@
                 'To Ship': all.filter(function (o) { return o.status === 'Pending' || o.status === 'Preparing'; }).length,
                 'To Receive': all.filter(function (o) { return o.status === 'Ready' || o.status === 'Pick Up'; }).length,
                 'To Review': all.filter(function (o) { return isCompletedOrder(o); }).reduce(function (n, o) { return n + o.items.filter(function (i, ix) { return !reviewed(o, ix); }).length; }, 0),
-                'Return': all.filter(function (o) { return o.status === 'Returned'; }).length
+                'Return': all.filter(function (o) { return o.status === 'Returned'; }).length,
+                'Cancelled': all.filter(function (o) { return o.status === 'Cancelled'; }).length
             };
             var bar = '<div class="oc_tabs">' + TABS.map(function (name) {
                 var n = counts[name];
@@ -554,6 +602,7 @@
             }).join('') + '</div>';
             var body;
             if (!all.length) body = '<p class="empty">You have no orders yet.</p><div style="text-align:center"><button type="button" class="cart_checkout"><a href="home_page.html#weekly">Go to Menu</a></button></div>';
+            else if (tab === 'Cancelled') body = cancelledCards(list);
             else if (tab === 'To Review') body = reviewCards(all);
             else if (!list.length) body = '<p class="empty">No orders in "' + tab + '".</p>';
             else body = list.map(orderCard).join('');
@@ -575,7 +624,7 @@
         var cc = document.createElement('div');
         cc.id = 'cancel_modal';
         cc.innerHTML = '<div class="cc_card" role="dialog" aria-modal="true" aria-labelledby="cc_title">' +
-            '<p class="cc_title" id="cc_title">Cancel this order?</p>' +
+            '<p class="cc_title" id="cc_title">Request a cancellation?</p>' +
             '<p class="cc_sub" id="cc_sub"></p>' +
             '<p class="cc_pay" id="cc_pay"></p>' +
             '<label class="cc_label" for="cc_reason">Reason for cancelling</label>' +
@@ -586,13 +635,13 @@
             '<div id="cc_refund" hidden><p class="cc_rf_t">Refund details</p>' +
             '<p class="cc_rf_s">This order was already paid, so the refund needs the reference number and a photo of the receipt.</p>' +
             '<label class="cc_label" for="cc_ref">Reference number</label>' +
-            '<input class="cc_in" id="cc_ref" maxlength="24" placeholder="Reference number on your receipt">' +
+            '<input class="cc_in" id="cc_ref" inputmode="numeric" maxlength="24" placeholder="Reference number on your receipt">' +
             '<label class="cc_label" for="cc_file">Receipt</label>' +
             '<div class="photo_row" data-upload><div class="photo_prev cc_prev" id="cc_prev"></div><input type="file" id="cc_file" accept="image/*">' +
             '<button type="button" class="btn_dark cc_pick" id="cc_pick">Upload receipt</button><span class="cc_fn" id="cc_fn">No receipt uploaded</span></div></div>' +
             '<p class="cc_msg" id="cc_msg"></p>' +
             '<div class="cc_btns"><button type="button" class="cc_keep" id="cc_keep">Keep order</button>' +
-            '<button type="button" class="cc_go" id="cc_cancel">Cancel order</button></div></div>';
+            '<button type="button" class="cc_go" id="cc_cancel">Send request</button></div></div>';
         document.body.appendChild(cc);
 
         var ccOrder = null, ccShot = '';
@@ -633,7 +682,12 @@
             ccSay(ccEl('cc_refund').hidden && ccOrder && !ccPaid(ccOrder) ? 'No refund will be made: cash is only collected on delivery, so this order was not charged.' : '');
         });
         ccEl('cc_other').addEventListener('input', function () { ccEl('cc_other').classList.remove('invalid'); });
-        ccEl('cc_ref').addEventListener('input', function () { ccEl('cc_ref').classList.remove('invalid'); });
+        /* the reference number is numbers only: letters and symbols cannot be typed or pasted in */
+        ccEl('cc_ref').addEventListener('input', function () {
+            var clean = this.value.replace(/\D/g, '');
+            if (clean !== this.value) this.value = clean;
+            this.classList.remove('invalid');
+        });
         ccEl('cc_pick').addEventListener('click', function () { ccEl('cc_file').click(); });
         ccEl('cc_file').addEventListener('change', function () {
             var f = this.files && this.files[0];
@@ -664,37 +718,28 @@
             if (!reason) { ccEl('cc_reason').classList.add('invalid'); ccSay('Choose one reason for cancelling the order.', true); ccEl('cc_reason').focus(); return; }
             if (reason === 'Other reason' && !other) { ccEl('cc_other').classList.add('invalid'); ccSay('Type your reason.', true); ccEl('cc_other').focus(); return; }
             if (needs && !ref) { ccEl('cc_ref').classList.add('invalid'); ccSay('Type the reference number of your payment.', true); ccEl('cc_ref').focus(); return; }
+            if (needs && !/^\d+$/.test(ref)) { ccEl('cc_ref').classList.add('invalid'); ccSay('The reference number must be numbers only.', true); ccEl('cc_ref').focus(); return; }
             if (needs && !ccShot) { ccEl('cc_prev').classList.add('invalid'); ccSay('Upload the receipt of your payment.', true); ccEl('cc_pick').focus(); return; }
             var list = S.get('sh_orders', []);
             var target = list.filter(function (o) { return String(o.id) === String(ccOrder.id) && SH.norm(o.name) === SH.norm(SH.user().name); })[0];
             if (!target || target.sample || target.status !== 'Pending') { ccClose(); SH.toast('This order can no longer be cancelled.'); drawOrders(true); return; }
-            var kind = payKind(target), full = reason === 'Other reason' ? other : reason, reqId = 'rf' + Date.now();
-            /* the refund record is saved first: if the receipt cannot be stored, the order stays as it is */
-            if (needs) {
-                var reqs = S.get('sh_refunds', []);
-                reqs.push({ id: reqId, orderId: target.id, itemIndex: null,
-                    product: target.items.map(function (i) { return i.name; }).join(', '), userName: target.name,
-                    reason: full, details: '', reference: ref, method: PAY_NAME[kind], kind: 'Order cancellation',
-                    evidence: [{ name: 'receipt.webp', type: 'image/webp', data: ccShot }], status: 'Requested', date: new Date().toISOString() });
-                S.set('sh_refunds', reqs);
-                var kept = S.get('sh_refunds', []).some(function (x) { return x.id === reqId; });
-                if (!kept) { ccSay('The receipt is too large to save. Upload a smaller photo.', true); return; }
-            }
-            var stockLeft = SH.stock();
-            target.items.forEach(function (item) { stockLeft[item.name] = (stockLeft[item.name] || 0) + item.qty; });
-            SH.saveStock(stockLeft);
-            target.status = 'Cancelled';
-            target.cancelReason = full;
-            target.cancelDate = new Date().toISOString();
-            if (needs) {
-                target.refundStatus = 'Requested';
-                target.refund = { id: reqId, status: 'Requested', method: PAY_NAME[kind], reference: ref, date: new Date().toISOString() };
-            } else {
-                target.refundStatus = 'No refund';
-            }
+            if (target.cancelRequest && target.cancelRequest.status === 'Requested') { ccClose(); SH.toast('You already asked to cancel this order. Please wait for the shop owner.'); drawOrders(true); return; }
+            var kind = payKind(target), full = reason === 'Other reason' ? other : reason, reqId = 'cr' + Date.now();
+            /* the shop owner decides, so the order itself is not cancelled here; the request is saved first,
+               so a receipt that cannot be stored changes nothing */
+            target.cancelRequest = {
+                id: reqId, status: 'Requested', reason: full, date: new Date().toISOString(),
+                needsRefund: needs, reference: needs ? ref : '', method: needs ? PAY_NAME[kind] : '',
+                evidence: needs ? [{ name: 'receipt.webp', type: 'image/webp', data: ccShot }] : []
+            };
             S.set('sh_orders', list);
+            var saved = S.get('sh_orders', []).filter(function (o) { return String(o.id) === String(target.id); })[0];
+            if (!saved || !saved.cancelRequest || saved.cancelRequest.id !== reqId) {
+                delete target.cancelRequest;
+                ccSay('The receipt is too large to save. Upload a smaller photo.', true); return;
+            }
             ccClose();
-            SH.toast('Order #' + SH.orderTagLabel(target) + ' was cancelled.' + (needs ? ' Refund requested.' : ' No refund needed.'));
+            SH.toast('Cancellation request sent for order #' + SH.orderTagLabel(target) + '. The shop owner will review it.');
             drawOrders(true);
         });
 
@@ -706,6 +751,7 @@
             if (cancel) {
                 var cancelList = S.get('sh_orders', []), target = cancelList.filter(function (o) { return String(o.id) === cancel.getAttribute('data-cancel') && SH.norm(o.name) === SH.norm(SH.user().name); })[0];
                 if (!target || target.sample || target.status !== 'Pending') { SH.toast('This order can no longer be cancelled.'); drawOrders(true); return; }
+                if (target.cancelRequest && target.cancelRequest.status === 'Requested') { SH.toast('You already asked to cancel this order. Please wait for the shop owner.'); drawOrders(true); return; }
                 openCancel(target); return;
             }
             var star = e.target.closest('.quick_rating [data-value]');
