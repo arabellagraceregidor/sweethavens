@@ -116,15 +116,24 @@ footer{
     position: absolute;
     top: 60%;
     left: 20%;
-    padding: 16px 32px;
+    padding: 0;
     background-color: #F4C2D6;
     color:#572e17;
     border: none;
     border-radius: 24px;
     cursor: pointer;
 }
+/* the label fills the whole button, so the whole Order Now button is clickable */
+#h_button a {
+    display: block;
+    padding: 16px 32px;
+    border-radius: 24px;
+}
 #h_button:hover {
     background-color: #572e17;
+}
+#h_button:hover a {
+    color: #F4C2D6;
 }
 a{
     text-decoration: none;
@@ -238,6 +247,9 @@ body{ background:var(--bg); color:var(--ink); font-family:var(--ari); min-height
 [data-theme="dark"] a{ color:var(--ink); }
 [data-theme="dark"] header a.nav1{ color:#F4C2D6; }
 button a{ color:inherit; }
+/* a link inside a button covers the whole oval, so the padding is clickable too */
+button:has(> a){ position:relative; }
+button > a::after{ content:""; position:absolute; inset:0; }
 #theme{ position:fixed; bottom:18px; right:16px; z-index:60; width:38px; height:38px; border-radius:50%; border:2px solid var(--bord);
     background:var(--card); font-size:18px; line-height:1; cursor:pointer; }
 #hero_cookie{ max-width:100%; height:auto; object-fit:contain; }
@@ -580,9 +592,12 @@ table.tbl th{ text-align:left; padding:10px 12px; color:var(--mar); border-botto
 table.tbl td{ padding:10px 12px; border-bottom:1px solid var(--bord); vertical-align:middle; }
 table.tbl tr:hover td{ background:var(--field); }
 .pill_s{ display:inline-block; padding:4px 12px; border-radius:12px; font:13px var(--rug); background:var(--pink); color:#3A2C2F; white-space:nowrap; }
-.pill_s.low{ background:#FFD9A0; } .pill_s.out{ background:#F3A6A0; } .pill_s.ok{ background:#CDE8C4; } .pill_s.Cancelled{ background:#F3A6A0; } .pill_s.Completed{ background:#CDE8C4; }
+.pill_s.low{ background:#FFD9A0; } .pill_s.out{ background:#F3A6A0; } .pill_s.ok{ background:#CDE8C4; } .pill_s.Cancelled{ background:#F3A6A0; } .pill_s.Completed{ background:#CDE8C4; } .pill_s.Returned{ background:#CEA386; }
+.pill_s.Rejected{ background:#F3A6A0; }
 .mini{ width:30px; height:30px; border-radius:50%; border:2px solid var(--txt); background:none; color:var(--mar); font:700 16px var(--ari); cursor:pointer; margin:0 2px; }
 .mini.wide{ width:auto; padding:0 12px; border-radius:15px; font-size:13px; }
+.mini.approve{ background:#CDE8C4; border-color:#CDE8C4; color:#3A2C2F; }
+.mini.reject{ background:#F3A6A0; border-color:#F3A6A0; color:#3A2C2F; }
 .filters{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:center; }
 .filters button{ padding:8px 16px; border:2px solid var(--bord); border-radius:14px; background:var(--field); color:var(--mar); font:14px var(--rug); cursor:pointer; transition:all .2s; }
 .filters button.on{ background:var(--mar); color:#fff; border-color:var(--mar); }
@@ -970,6 +985,9 @@ body:has(.admin_cont){ background-image:none; }
 .oc_tabs button{ flex:none; padding:8px 18px; border:2px solid var(--bord); border-radius:18px; background:var(--field); color:var(--mar); font:15px var(--rug); cursor:pointer; transition:all .2s; }
 .oc_tabs button em{ font-style:normal; margin-left:4px; padding:0 7px; border-radius:10px; background:var(--pink); color:#93494A; font-size:12px; }
 .oc_tabs button.on{ background:var(--mar); color:#fff; border-color:var(--mar); }
+.oc_group{ display:flex; align-items:center; gap:8px; margin:24px 0 12px; font:italic 700 20px lemon, var(--ari); color:var(--mar); }
+.oc_group:first-of-type{ margin-top:4px; }
+.oc_group em{ font:700 13px var(--rug); font-style:normal; padding:2px 9px; border-radius:10px; background:var(--pink); color:#93494A; }
 .order_card{ background:var(--card); border:3px solid var(--bord); border-radius:26px; padding:18px 22px; margin-bottom:20px; transition:box-shadow .25s; }
 .order_card:hover{ box-shadow:0 8px 22px rgba(147,73,74,.2); }
 .oc_head{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; }
