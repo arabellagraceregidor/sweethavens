@@ -116,41 +116,40 @@
         <script src="site.js"></script>
 
         <script>
-    (function () {
-        var dateEl = document.getElementById('date');
-        var hoursEl = document.getElementById('store_hours_pill');
+            (function () {
+                var dateEl = document.getElementById('date');
+                var hoursEl = document.getElementById('store_hours_pill');
 
-        // 1. Auto-compute current week (Sunday to Saturday)
-        if (dateEl) {
-            var now = new Date();
-            var sun = new Date(now);
-            sun.setDate(now.getDate() - now.getDay()); // Sunday
-            var sat = new Date(sun);
-            sat.setDate(sun.getDate() + 6); // Saturday
+                // 1. Auto-compute current week (Sunday to Saturday)
+                if (dateEl) {
+                    var now = new Date();
+                    var sun = new Date(now);
+                    sun.setDate(now.getDate() - now.getDay()); // Sunday
+                    var sat = new Date(sun);
+                    sat.setDate(sun.getDate() + 6); // Saturday
 
-            var sunM = sun.toLocaleDateString('en-US', { month: 'short' });
-            var satM = sat.toLocaleDateString('en-US', { month: 'short' });
+                    var sunM = sun.toLocaleDateString('en-US', { month: 'short' });
+                    var satM = sat.toLocaleDateString('en-US', { month: 'short' });
 
-            dateEl.textContent = (sunM === satM)
-                ? (sunM + ' ' + sun.getDate() + '–' + sat.getDate())
-                : (sunM + ' ' + sun.getDate() + ' – ' + satM + ' ' + sat.getDate());
-        }
+                    dateEl.textContent = (sunM === satM)
+                        ? (sunM + ' ' + sun.getDate() + '–' + sat.getDate())
+                        : (sunM + ' ' + sun.getDate() + ' – ' + satM + ' ' + sat.getDate());
+                }
 
-        // 2. Pull live opening & closing time saved in Schedule Management
-        if (hoursEl) {
-            var savedHours = localStorage.getItem('sh_store_hours');
-            if (!savedHours) {
-                try {
-                    var obj = JSON.parse(localStorage.getItem('sh_store_hours_obj') || 'null');
-                    if (obj && obj.open && obj.close) {
-                        savedHours = obj.open + ' – ' + obj.close;
+                // 2. Pull live opening & closing time saved in Schedule Management
+                if (hoursEl) {
+                    var savedHours = localStorage.getItem('sh_store_hours');
+                    if (!savedHours) {
+                        try {
+                            var obj = JSON.parse(localStorage.getItem('sh_store_hours_obj') || 'null');
+                            if (obj && obj.open && obj.close) {
+                                savedHours = obj.open + ' – ' + obj.close;
+                            }
+                        } catch (e) {}
                     }
-                } catch (e) {}
-            }
-            hoursEl.textContent = 'Store Hours: ' + (savedHours || '8:00 AM – 8:00 PM');
-        }
-    })();
-</script>
-
+                    hoursEl.textContent = 'Store Hours: ' + (savedHours || '8:00 AM – 8:00 PM');
+                }
+            })();
+        </script>
     </body>
 </html>
