@@ -22,9 +22,27 @@
                 <p>Already have an Account? <a href="login.html">Sign In</a></p>
             </div>
         </section>
-        <main>
-            <section style="background-color: #f8f8f8; padding: 50px 0;">
+        <div>
+            <section>
                 <h2 style="text-align: center; margin-bottom: 30px;">Our Products</h2>
+                <!--Weekly bakes section-->
+                <div id="weekly" style="padding-top: 40px; margin-top: 10px;">
+                    <div id="main_header" style="margin-left: 5%; margin-right: 5%;">
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:10px;">
+                            <p id="date" style="margin:0;"></p>
+                            <p id="store_hours_pill" style="margin:0; background:#fff0f6; border:1px solid #f2b5ce; color:#7a2e4d; padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600;">
+                                Store Hours: 3:00 PM - 6:30 PM
+                            </p>
+                        </div>
+                        <h1 class="products_header">Weekly bakes</h1>
+                        <p>New and returning flavors every week. Try them out!</p>
+                    </div>
+                    <!--product list container-->
+                    <div id="product-grid" class="product-list">
+
+                    </div>
+                </div>
+
                 <!--Best sellers section-->
                 <section id="bestsellers">
                     <div id="main_header">
@@ -37,7 +55,7 @@
                     </div>
                 </section>
             </section>
-        </main>
+        </div>
 
         <!--Template for type 1 product card (for js script populating)-->
         <template id="card-template">
